@@ -59,7 +59,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(4px) brightness(0.7); 
+  
   transform: scale(1.1);
 }
 
@@ -1521,7 +1521,7 @@
 .book3d-container {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 70vh;
   overflow: hidden;
 }
 
@@ -1710,5 +1710,193 @@
   
   .box--bottom {
     transform: translate3d(-60px, -90px, 0) translate3d(0px, 175px, -5px) rotateX(-90deg);
+  }
+}
+
+/* Enhanced Hero Blur Box */
+.hero-blur-box {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 
+    0 15px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-blur-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(22, 163, 74, 0.08) 0%,
+    rgba(234, 179, 8, 0.04) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  z-index: -1;
+}
+
+/* Update hero content positioning */
+.hero-content {
+  position: relative;
+  z-index: 4;
+  text-align: center;
+  max-width: 900px;
+  padding: 100px 20px 60px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Smaller text sizes */
+.hero-blur-box .hero-title {
+  color: white;
+  text-shadow: 0 3px 15px rgba(0, 0, 0, 0.4);
+  font-size: 3rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.hero-blur-box .hero-main-title {
+  display: block;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hero-blur-box .hero-subtitle-text {
+  color: var(--primary-green) !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.hero-blur-box .hero-description {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Smaller search bar */
+.hero-blur-box .search-container {
+  max-width: 500px;
+  margin: 0 auto 2rem auto;
+}
+
+.hero-blur-box .search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.hero-blur-box .search-input {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  padding: 16px 20px 16px 50px;
+  font-size: 1rem;
+}
+
+.hero-blur-box .search-input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Smaller buttons */
+.hero-blur-box .hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.hero-blur-box .btn {
+  padding: 14px 28px;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+.hero-blur-box .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Responsive design for smaller blur box */
+@media (max-width: 768px) {
+  .hero-blur-box {
+    padding: 2rem 1.5rem;
+    margin: 0 1rem;
+    max-width: 600px;
+  }
+  
+  .hero-blur-box .hero-title {
+    font-size: 2.2rem;
+  }
+  
+  .hero-blur-box .hero-main-title {
+    font-size: 2rem;
+  }
+  
+  .hero-blur-box .hero-subtitle-text {
+    font-size: 1.6rem;
+  }
+  
+  .hero-blur-box .hero-description {
+    font-size: 1rem;
+  }
+  
+  .hero-content {
+    padding: 80px 20px 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-blur-box {
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+  }
+  
+  .hero-blur-box .hero-title {
+    font-size: 1.8rem;
+  }
+  
+  .hero-blur-box .hero-main-title {
+    font-size: 1.6rem;
+  }
+  
+  .hero-blur-box .hero-subtitle-text {
+    font-size: 1.3rem;
+  }
+  
+  .hero-blur-box .hero-description {
+    font-size: 0.9rem;
+  }
+  
+  .hero-blur-box .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .hero-blur-box .btn {
+    width: 200px;
+    padding: 12px 24px;
+  }
+  
+  .hero-content {
+    padding: 60px 15px 30px;
   }
 }

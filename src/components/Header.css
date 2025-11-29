@@ -126,10 +126,7 @@
   transition: all 0.3s ease;
 }
 
-.logo-wrapper:hover .logo-text {
-  background: var(--gradient-logo-reverse);
-  -webkit-text-fill-color: transparent;
-}
+
 
 .logo-subtitle {
   font-size: 0.7rem;
@@ -706,4 +703,259 @@
 .nav-link,
 .auth-btn {
   will-change: transform;
+}
+
+/* User Menu Styles */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient-logo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-avatar-icon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--neutral-800);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--neutral-600);
+  line-height: 1;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-btn {
+  padding: 0.5rem 1rem;
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.dashboard-btn:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+}
+
+.logout-btn {
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--neutral-300);
+  border-radius: 6px;
+  color: var(--neutral-600);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.logout-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Mobile User Info */
+.mobile-user-info {
+  padding: 1rem;
+  border-top: 1px solid var(--neutral-200);
+  border-bottom: 1px solid var(--neutral-200);
+  margin: 1rem -1rem;
+}
+
+.mobile-user-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mobile-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gradient-logo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-user-avatar-icon {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.mobile-user-name {
+  font-weight: 600;
+  color: var(--neutral-800);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-user-role {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+}
+
+.mobile-user-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.mobile-dashboard-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-dashboard-btn:hover {
+  background: var(--green-dark);
+}
+
+.mobile-logout-btn {
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 1px solid var(--neutral-300);
+  border-radius: 8px;
+  color: var(--neutral-600);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.mobile-logout-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.mobile-logout-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .user-details {
+    display: none;
+  }
+  
+  .user-info {
+    padding: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-menu {
+    display: none;
+  }
+  
+  .dashboard-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .user-name {
+    color: var(--neutral-100);
+  }
+  
+  .user-role {
+    color: var(--neutral-400);
+  }
+  
+  .user-info:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .logout-btn {
+    border-color: var(--neutral-600);
+    color: var(--neutral-400);
+  }
+  
+  .logout-btn:hover {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #f87171;
+  }
+  
+  .mobile-logout-btn {
+    border-color: var(--neutral-600);
+    color: var(--neutral-400);
+  }
+  
+  .mobile-logout-btn:hover {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #f87171;
+  }
 }

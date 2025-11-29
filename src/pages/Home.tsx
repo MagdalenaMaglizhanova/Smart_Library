@@ -1,9 +1,129 @@
-import React from 'react';
-import { Search, ArrowRight, BookOpen, Users, Clock, Star, Calendar, MapPin, Quote } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, ArrowRight, BookOpen, Users, Clock, Star, Calendar, MapPin, Quote, User } from 'lucide-react';
+import { db } from '../firebase/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Home.css';
 import libraryImage from '../assets/images/1.jpg';
 
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  endTime: string;
+  location: string;
+  maxParticipants: number;
+  currentParticipants: number;
+  allowedRoles: string[];
+  organizer: string;
+}
+
 const Home: React.FC = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Зареждане на събития от Firestore
+  const fetchEvents = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "events"));
+      const eventsData: Event[] = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Event));
+      
+      // Филтрираме само бъдещите събития
+      const currentDate = new Date();
+      const futureEvents = eventsData.filter(event => {
+        if (!event.date) return false;
+        
+        const eventDate = parseBulgarianDate(event.date);
+        const isFuture = eventDate >= currentDate;
+
+        // ✅ ВСИЧКИ виждат събитията, независимо дали са логнати
+        return isFuture;
+      });
+      
+      setEvents(futureEvents.slice(0, 4));
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      // Fallback данни
+      setEvents([
+        {
+          id: '1',
+          title: 'Среща с писател',
+          date: '15 Декември',
+          time: '14:00',
+          endTime: '15:30',
+          location: 'Читалня',
+          description: 'Среща с известен български автор',
+          maxParticipants: 20,
+          currentParticipants: 8,
+          allowedRoles: ['reader', 'librarian'],
+          organizer: 'Мария Иванова'
+        },
+        {
+          id: '2',
+          title: 'Чета с приятели',
+          date: '20 Декември',
+          time: '16:00',
+          endTime: '17:30',
+          location: 'Детски отдел',
+          description: 'Четене на приказки за най-малките',
+          maxParticipants: 15,
+          currentParticipants: 12,
+          allowedRoles: ['reader'],
+          organizer: 'Петър Георгиев'
+        }
+      ]);
+    }
+  };
+
+  // Помощна функция за парсване на български дати
+  const parseBulgarianDate = (dateString: string): Date => {
+    const months: { [key: string]: number } = {
+      'януари': 0, 'февруари': 1, 'март': 2, 'април': 3,
+      'май': 4, 'юни': 5, 'юли': 6, 'август': 7,
+      'септември': 8, 'октомври': 9, 'ноември': 10, 'декември': 11
+    };
+    
+    const parts = dateString.split(' ');
+    if (parts.length === 2) {
+      const day = parseInt(parts[0]);
+      const month = months[parts[1].toLowerCase()];
+      if (day && month !== undefined) {
+        const currentYear = new Date().getFullYear();
+        return new Date(currentYear, month, day);
+      }
+    }
+    
+    return new Date();
+  };
+
+  // ✅ ПРОМЕНЕНА ФУНКЦИЯ - само пренасочване, без автоматично записване
+  const handleEventRegistration = (event: Event) => {
+    if (!user) {
+      alert('Моля, влезте в профила си, за да се запишете за събитието!');
+      return;
+    }
+
+    if (isEventFull(event)) {
+      alert('Събитието е пълно! Не можете да се запишете.');
+      return;
+    }
+
+    // ✅ САМО ПРОНАСОЧВАНЕ към dashboard
+    // Записването ще стане ръчно от потребителя в dashboard
+    navigate('/dashboard');
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
   // Hero Section Data
   const heroData = {
     title: 'Училищна Библиотека',
@@ -76,26 +196,6 @@ const Home: React.FC = () => {
     }
   ];
 
-  // Events Data
-  const events = [
-    {
-      id: 1,
-      title: 'Среща с писател',
-      date: '15 Декември',
-      time: '14:00',
-      location: 'Читалня',
-      description: 'Среща с известен български автор'
-    },
-    {
-      id: 2,
-      title: 'Чета с приятели',
-      date: '20 Декември',
-      time: '16:00',
-      location: 'Детски отдел',
-      description: 'Четене на приказки за най-малките'
-    }
-  ];
-
   // Testimonials Data
   const testimonials = [
     {
@@ -152,55 +252,63 @@ const Home: React.FC = () => {
     );
   };
 
+  const getAvailableSpots = (event: Event) => {
+    return Math.max(0, event.maxParticipants - event.currentParticipants);
+  };
+
+  const isEventFull = (event: Event) => {
+    return getAvailableSpots(event) <= 0;
+  };
+
   return (
     <div className="home-container">
       {/* Modern Hero Section with Background Image */}
-      <section className="hero-section">
-        <div className="hero-background">
-          <img 
-            src={libraryImage} 
-            alt="Училищна библиотека" 
-            className="hero-bg-image"
+     {/* Modern Hero Section with Background Image */}
+<section className="hero-section">
+  <div className="hero-background">
+    <img 
+      src={libraryImage} 
+      alt="Училищна библиотека" 
+      className="hero-bg-image"
+    />
+    <div className="hero-overlay"></div>
+  </div>
+  
+  <div className="hero-content">
+    <div className="hero-blur-box">
+      <h1 className="hero-title">
+        <span className="hero-main-title">{heroData.title}</span>
+        <span className="hero-subtitle-text">{heroData.subtitle}</span>
+      </h1>
+
+      <p className="hero-description">
+        {heroData.description}
+      </p>
+
+      {/* Search Bar */}
+      <div className="search-container">
+        <div className="search-bar">
+          <Search className="search-icon" />
+          <input
+            type="text"
+            placeholder={heroData.searchPlaceholder}
+            className="search-input"
           />
-          <div className="hero-overlay"></div>
         </div>
-        
-        <div className="hero-content">
-          {/* ДОБАВЕН hero-blur-box */}
-          <div className="hero-blur-box">
-            <h1 className="hero-title">
-              <span className="hero-main-title">{heroData.title}</span>
-              <span className="hero-subtitle-text">{heroData.subtitle}</span>
-            </h1>
+      </div>
 
-            <p className="hero-description">
-              {heroData.description}
-            </p>
-
-            {/* Search Bar */}
-            <div className="search-container">
-              <div className="search-bar">
-                <Search className="search-icon" />
-                <input
-                  type="text"
-                  placeholder={heroData.searchPlaceholder}
-                  className="search-input"
-                />
-              </div>
-            </div>
-
-            <div className="hero-buttons">
-              <button className="btn btn-primary">
-                <span>Разгледай каталога</span>
-                <ArrowRight className="btn-icon" />
-              </button>
-              <button className="btn btn-secondary">
-                Стани читател
-              </button>
-            </div>
-          </div> {/* край на blur кутията */}
-        </div>
-      </section>
+      <div className="hero-buttons">
+        <button className="btn btn-primary">
+          <span>Разгледай каталога</span>
+          <ArrowRight className="btn-icon" />
+        </button>
+        <button className="btn btn-secondary">
+          Стани читател
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Features Section */}
       <section className="features-section">
@@ -287,21 +395,21 @@ const Home: React.FC = () => {
       </section>
 
       {/* Book Animation Section */}
-<section className="book-animation-section">
-  <div className="book3d-container">
-      <div className="bg"></div>
-      <div className="container">
-        <div className="box-holder" style={{ animationPlayState: 'running !important' }}>
-          <div className="box--front"></div>
-          <div className="box--side-left"></div>
-          <div className="box--side-right"></div>
-          <div className="box--top"></div>
-          <div className="box--bottom"></div>
-          <div className="box--back"></div>
+      <section className="book-animation-section">
+        <div className="book3d-container">
+          <div className="bg"></div>
+          <div className="container">
+            <div className="box-holder" style={{ animationPlayState: 'running !important' }}>
+              <div className="box--front"></div>
+              <div className="box--side-left"></div>
+              <div className="box--side-right"></div>
+              <div className="box--top"></div>
+              <div className="box--bottom"></div>
+              <div className="box--back"></div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-</section>
+      </section>
 
       {/* Events Section */}
       <section className="events-section">
@@ -339,6 +447,7 @@ const Home: React.FC = () => {
                   </div>
                   
                   <div className="event-content">
+                    <p>Тема:</p>
                     <h3 className="event-title">{event.title}</h3>
                     <p className="event-description">{event.description}</p>
                     
@@ -358,7 +467,7 @@ const Home: React.FC = () => {
                         </div>
                         <div className="detail-content">
                           <span className="detail-label">Час</span>
-                          <span className="detail-value">{event.time}</span>
+                          <span className="detail-value">{event.time} - {event.endTime}</span>
                         </div>
                       </div>
                       <div className="event-detail">
@@ -370,16 +479,38 @@ const Home: React.FC = () => {
                           <span className="detail-value">{event.location}</span>
                         </div>
                       </div>
+                      <div className="event-detail">
+                        <div className="detail-icon-wrapper">
+                          <User className="detail-icon" />
+                        </div>
+                        <div className="detail-content">
+                          <span className="detail-label">Организатор</span>
+                          <span className="detail-value">{event.organizer || "Не е посочен"}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
                   <div className="event-footer">
-                    <button className="event-btn">
-                      <span>Запиши се</span>
-                      <ArrowRight className="btn-icon" />
+                    <button 
+                      className={`event-btn ${!user || isEventFull(event) ? 'event-btn-disabled' : ''}`}
+                      disabled={!user || isEventFull(event)}
+                      onClick={() => handleEventRegistration(event)}
+                    >
+                      <span>
+                        {!user 
+                          ? 'Влезте, за да се запишете' 
+                          : isEventFull(event) 
+                            ? 'Пълно' 
+                            : 'Запиши се'
+                        }
+                      </span>
+                      {!isEventFull(event) && user && <ArrowRight className="btn-icon" />}
                     </button>
                     <div className="event-spots">
-                      <span className="spots-text">Оставащи места: {12 - index * 3}</span>
+                      <span className="spots-text">
+                        Оставащи места: {getAvailableSpots(event)}
+                      </span>
                     </div>
                   </div>
                   
@@ -388,6 +519,13 @@ const Home: React.FC = () => {
               );
             })}
           </div>
+
+          {events.length === 0 && (
+            <div className="no-events">
+              <Calendar className="no-events-icon" />
+              <p>В момента няма предстоящи събития</p>
+            </div>
+          )}
         </div>
       </section>
 
