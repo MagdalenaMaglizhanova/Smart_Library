@@ -4,13 +4,15 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/firebase";
-import { BookOpen, Eye, EyeOff, User, Shield, CheckCircle, RefreshCw } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Shield, CheckCircle, RefreshCw, UserCircle } from "lucide-react";
 import './Login.css';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
@@ -43,6 +45,13 @@ const Register: React.FC = () => {
     setErrorMessage("");
     setCaptchaError(false);
 
+    // Validation
+    if (!firstName.trim() || !lastName.trim()) {
+      setErrorMessage("Моля, попълнете и двете имена");
+      setIsLoading(false);
+      return;
+    }
+
     // CAPTCHA validation
     const expectedAnswer = (num1 + num2).toString();
     if (captchaAnswer !== expectedAnswer) {
@@ -73,19 +82,23 @@ const Register: React.FC = () => {
       // Create user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
         email: email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        displayName: `${firstName.trim()} ${lastName.trim()}`,
         role: "reader",
         books: [],
         events: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         profile: {
-          displayName: "",
+          displayName: `${firstName.trim()} ${lastName.trim()}`,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           phone: "",
           grade: ""
         }
       });
 
-    
       navigate("/");
 
     } catch (error: unknown) {
@@ -176,11 +189,11 @@ const Register: React.FC = () => {
                 
                 <div className="feature-item">
                   <div className="feature-icon">
-                    <User size={20} />
+                    <UserCircle size={20} />
                   </div>
                   <div className="feature-text">
-                    <span className="feature-title">Персонализирано</span>
-                    <span className="feature-desc">Индивидуален профил</span>
+                    <span className="feature-title">Лични данни</span>
+                    <span className="feature-desc">Персонализиран профил</span>
                   </div>
                 </div>
               </div>
@@ -203,6 +216,45 @@ const Register: React.FC = () => {
                   <span>{errorMessage}</span>
                 </div>
               )}
+
+              {/* First Name and Last Name Fields */}
+              <div className="name-fields">
+                <div className="input-group">
+                  <label htmlFor="firstName" className="input-label">
+                    Име
+                  </label>
+                  <div className="input-container">
+                    <input
+                      id="firstName"
+                      type="text"
+                      placeholder="Вашето име"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="form-input"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="lastName" className="input-label">
+                    Фамилия
+                  </label>
+                  <div className="input-container">
+                    <input
+                      id="lastName"
+                      type="text"
+                      placeholder="Вашата фамилия"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="form-input"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="input-group">
                 <label htmlFor="email" className="input-label">
@@ -351,7 +403,7 @@ const Register: React.FC = () => {
               <button
                 type="submit"
                 className={`login-button ${isLoading ? 'loading' : ''} ${!isPasswordStrong ? 'disabled' : ''}`}
-                disabled={isLoading || !isPasswordStrong || password !== confirmPassword || !captchaAnswer}
+                disabled={isLoading || !isPasswordStrong || password !== confirmPassword || !captchaAnswer || !firstName.trim() || !lastName.trim()}
               >
                 {isLoading ? (
                   <div className="button-loader"></div>

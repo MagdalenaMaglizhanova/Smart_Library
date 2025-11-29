@@ -408,8 +408,6 @@ const UserDashboard: React.FC = () => {
                     <th>Дата и час</th>
                     <th>Място</th>
                     <th>Места</th>
-                    <th>Статус</th>
-                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>

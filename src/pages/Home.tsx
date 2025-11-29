@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Search, ArrowRight, BookOpen, Users, Clock, Star, Calendar, MapPin, Quote, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  ArrowRight, 
+  ChevronUp, 
+  ChevronDown, 
+  Users, 
+  BookOpen, 
+  Star, 
+  User, 
+  Search, 
+  Quote 
+} from 'lucide-react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
 import './Home.css';
 import libraryImage from '../assets/images/1.jpg';
 
@@ -19,6 +33,7 @@ interface Event {
   currentParticipants: number;
   allowedRoles: string[];
   organizer: string;
+  timestamp?: Date;
 }
 
 const Home: React.FC = () => {
@@ -27,90 +42,17 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Зареждане на събития от Firestore
-  const fetchEvents = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, "events"));
-      const eventsData: Event[] = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      } as Event));
-      
-      // Филтрираме само бъдещите събития
-      const currentDate = new Date();
-      const futureEvents = eventsData.filter(event => {
-        if (!event.date) return false;
-        
-        const eventDate = parseBulgarianDate(event.date);
-        const isFuture = eventDate >= currentDate;
-
-        // ✅ ВСИЧКИ виждат събитията, независимо дали са логнати
-        return isFuture;
-      });
-      
-      setEvents(futureEvents);
-    } catch (error) {
-      console.error("Error fetching events:", error);
-      // Fallback данни
-      setEvents([
-        {
-          id: '1',
-          title: 'Среща с писател',
-          date: '15 Декември',
-          time: '14:00',
-          endTime: '15:30',
-          location: 'Читалня',
-          description: 'Среща с известен български автор',
-          maxParticipants: 20,
-          currentParticipants: 8,
-          allowedRoles: ['reader', 'librarian'],
-          organizer: 'Мария Иванова'
-        },
-        {
-          id: '2',
-          title: 'Чета с приятели',
-          date: '20 Декември',
-          time: '16:00',
-          endTime: '17:30',
-          location: 'Детски отдел',
-          description: 'Четене на приказки за най-малките',
-          maxParticipants: 15,
-          currentParticipants: 12,
-          allowedRoles: ['reader'],
-          organizer: 'Петър Георгиев'
-        },
-        {
-          id: '3',
-          title: 'Литературен клуб',
-          date: '22 Декември',
-          time: '17:00',
-          endTime: '18:30',
-          location: 'Главна зала',
-          description: 'Дискусия за съвременна българска литература',
-          maxParticipants: 25,
-          currentParticipants: 18,
-          allowedRoles: ['reader', 'librarian'],
-          organizer: 'Анна Петрова'
-        },
-        {
-          id: '4',
-          title: 'Творческа работилница',
-          date: '25 Декември',
-          time: '10:00',
-          endTime: '12:00',
-          location: 'Творческа стая',
-          description: 'Работилница по писане на разкази',
-          maxParticipants: 12,
-          currentParticipants: 6,
-          allowedRoles: ['reader'],
-          organizer: 'Георги Димитров'
-        }
-      ]);
+  // Нова функция за парсване на дати - поддържа и ISO и български формат
+  const parseEventDate = (dateString: string, timeString: string = "00:00"): Date => {
+    // Проверяваме дали датата е в ISO формат (2025-12-18)
+    if (dateString.includes('-')) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const [hours, minutes] = timeString.split(':').map(Number);
+      // Месеците в JavaScript започват от 0, затова month - 1
+      return new Date(year, month - 1, day, hours, minutes);
     }
-  };
-
-  // Помощна функция за парсване на български дати
-  const parseBulgarianDate = (dateString: string): Date => {
+    
+    // Ако не е ISO формат, прилагаме българския парсър
     const months: { [key: string]: number } = {
       'януари': 0, 'февруари': 1, 'март': 2, 'април': 3,
       'май': 4, 'юни': 5, 'юли': 6, 'август': 7,
@@ -123,11 +65,142 @@ const Home: React.FC = () => {
       const month = months[parts[1].toLowerCase()];
       if (day && month !== undefined) {
         const currentYear = new Date().getFullYear();
-        return new Date(currentYear, month, day);
+        const [hours, minutes] = timeString.split(':').map(Number);
+        return new Date(currentYear, month, day, hours, minutes);
       }
     }
     
     return new Date();
+  };
+
+  // Функция за форматиране на датата за показване в български стил
+  const formatDateForDisplay = (dateString: string): string => {
+    if (dateString.includes('-')) {
+      // ISO формат - конвертираме към български
+      const [_year, month, day] = dateString.split('-').map(Number);
+      const monthsBg = [
+        'януари', 'февруари', 'март', 'април', 'май', 'юни',
+        'юли', 'август', 'септември', 'октомври', 'ноември', 'декември'
+      ];
+      return `${day} ${monthsBg[month - 1]}`;
+    }
+    // Ако вече е в български формат, връщаме както е
+    return dateString;
+  };
+
+  // Зареждане на събития от Firestore
+  const fetchEvents = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "events"));
+      const eventsData: Event[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Създаваме timestamp за сортиране с новата функция
+        const eventTimestamp = parseEventDate(data.date, data.time);
+        
+        return { 
+          id: doc.id, 
+          ...data,
+          timestamp: eventTimestamp
+        } as Event;
+      });
+      
+      // Филтрираме и сортираме събитията
+      const currentDate = new Date();
+      
+      // Филтрираме само бъдещите събития
+      const futureEvents = eventsData.filter(event => {
+        if (!event.date || !event.timestamp) return false;
+        
+        // Проверяваме дали събитието е бъдеще (включително днешните, които не са приключили)
+        const eventEndTime = parseEventDate(event.date, event.endTime);
+        return eventEndTime >= currentDate;
+      });
+      
+      // Сортираме по дата (най-близките първи)
+      futureEvents.sort((a, b) => {
+        if (!a.timestamp || !b.timestamp) return 0;
+        return a.timestamp.getTime() - b.timestamp.getTime();
+      });
+
+      // DEBUG: Принтирайте събитията за проверка
+      console.log('Сортирани събития:', futureEvents.map(event => ({
+        title: event.title,
+        date: event.date,
+        formattedDate: formatDateForDisplay(event.date),
+        timestamp: event.timestamp
+      })));
+      
+      setEvents(futureEvents);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      // Fallback данни - също филтрирани и сортирани
+      const currentDate = new Date();
+      
+      const fallbackEvents = [
+        {
+          id: '1',
+          title: 'Среща с писател',
+          date: '2025-12-15', // Променено на ISO формат
+          time: '14:00',
+          endTime: '15:30',
+          location: 'Читалня',
+          description: 'Среща с известен български автор',
+          maxParticipants: 20,
+          currentParticipants: 8,
+          allowedRoles: ['reader', 'librarian'],
+          organizer: 'Мария Иванова',
+          timestamp: parseEventDate('2025-12-15', '14:00')
+        },
+        {
+          id: '2',
+          title: 'Чета с приятели',
+          date: '2025-12-20',
+          time: '16:00',
+          endTime: '17:30',
+          location: 'Детски отдел',
+          description: 'Четене на приказки за най-малките',
+          maxParticipants: 15,
+          currentParticipants: 12,
+          allowedRoles: ['reader'],
+          organizer: 'Петър Георгиев',
+          timestamp: parseEventDate('2025-12-20', '16:00')
+        },
+        {
+          id: '3',
+          title: 'Литературен клуб',
+          date: '2025-12-22',
+          time: '17:00',
+          endTime: '18:30',
+          location: 'Главна зала',
+          description: 'Дискусия за съвременна българска литература',
+          maxParticipants: 25,
+          currentParticipants: 18,
+          allowedRoles: ['reader', 'librarian'],
+          organizer: 'Анна Петрова',
+          timestamp: parseEventDate('2025-12-22', '17:00')
+        },
+        {
+          id: '4',
+          title: 'Творческа работилница',
+          date: '2025-12-25',
+          time: '10:00',
+          endTime: '12:00',
+          location: 'Творческа стая',
+          description: 'Работилница по писане на разкази',
+          maxParticipants: 12,
+          currentParticipants: 6,
+          allowedRoles: ['reader'],
+          organizer: 'Георги Димитров',
+          timestamp: parseEventDate('2025-12-25', '10:00')
+        }
+      ].filter(event => {
+        const eventEndTime = parseEventDate(event.date, event.endTime);
+        return eventEndTime >= currentDate;
+      }).sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
+      
+      setEvents(fallbackEvents);
+    }
   };
 
   // ✅ ПРОМЕНЕНА ФУНКЦИЯ - само пренасочване, без автоматично записване
@@ -427,29 +500,28 @@ const Home: React.FC = () => {
       </section>
 
       {/* Book Animation Section */}
-      {/* Book Animation Section */}
-<section className="book-animation-section">
-  <div className="bookshelf">
-    <div className="books">
-      <div 
-        className="book" 
-        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
-      ></div>
-      <div 
-        className="book" 
-        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
-      ></div>
-      <div 
-        className="book" 
-        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
-      ></div>
-      <div 
-        className="book" 
-        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
-      ></div>
-    </div>
-  </div>
-</section>
+      <section className="book-animation-section">
+        <div className="bookshelf">
+          <div className="books">
+            <div 
+              className="book" 
+              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
+            ></div>
+            <div 
+              className="book" 
+              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
+            ></div>
+            <div 
+              className="book" 
+              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
+            ></div>
+            <div 
+              className="book" 
+              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
+            ></div>
+          </div>
+        </div>
+      </section>
 
       {/* Events Section */}
       <section className="events-section">
@@ -493,15 +565,21 @@ const Home: React.FC = () => {
                     <div className="event-details-compact">
                       <div className="event-detail-compact">
                         <Calendar className="detail-icon-compact" />
-                        <span className="detail-value-compact">{event.date}</span>
+                        <span className="detail-value-compact">{formatDateForDisplay(event.date)}</span>
                       </div>
                       <div className="event-detail-compact">
                         <Clock className="detail-icon-compact" />
-                        <span className="detail-value-compact">{event.time}</span>
+                        <span className="detail-value-compact">
+                          от {event.time} до {event.endTime}
+                        </span>
                       </div>
                       <div className="event-detail-compact">
                         <MapPin className="detail-icon-compact" />
                         <span className="detail-value-compact">{event.location}</span>
+                      </div>
+                      <div className="event-detail-compact">
+                        <User className="detail-icon-compact" />
+                        <span className="detail-value-compact">{event.organizer}</span>
                       </div>
                     </div>
                   </div>

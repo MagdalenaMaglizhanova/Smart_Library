@@ -164,7 +164,7 @@ const Footer: React.FC = () => {
           <div className="copyright">
             <p>
               © 2024 Smart School Library. Всички права запазени. 
-              Създадено с <Heart className="heart-icon" /> за образованието
+              Създадено с <Heart className="heart-icon" /> към образованието
             </p>
           </div>
           

@@ -2,7 +2,7 @@
 .user-dashboard {
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-  padding: 20px;
+  padding: 90px;
 }
 
 .dashboard-container {

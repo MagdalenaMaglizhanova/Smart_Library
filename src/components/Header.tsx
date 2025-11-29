@@ -48,17 +48,17 @@ const Header: React.FC = () => {
   }, []);
 
   const navigation = [
-  { name: 'Начало', href: '/', icon: Home },
-  { name: 'Каталог', href: '#каталог', icon: BookOpen },
-  { name: 'Събития', href: '/events', icon: Calendar }, 
-  { name: 'За нас', href: '#за-нас', icon: Info },
-];
+    { name: 'Начало', href: '/', icon: Home },
+    { name: 'Каталог', href: '#каталог', icon: BookOpen },
+    { name: 'Събития', href: '/events', icon: Calendar }, 
+  ];
 
   const quickLinks = [
     { name: 'Електронни книги', href: '#' },
     { name: 'Учебни помагала', href: '#' },
     { name: 'Читателски клуб', href: '#' },
     { name: 'Работно време', href: '#' },
+    { name: 'За нас', href: '#за-нас', icon: Info },
   ];
 
   const handleLoginClick = () => {
@@ -187,34 +187,35 @@ const Header: React.FC = () => {
           <div className="header-actions">
             {!loading && (
               <div className="auth-section">
-                {currentUser ? (
-                  <div className="user-menu">
-                    <div className="user-info">
-                      <div className="user-avatar">
-                        <User className="user-avatar-icon" />
-                      </div>
-                      <div className="user-details">
-                        <span className="user-name">{getUserDisplayName()}</span>
-                        <span className="user-role">{getUserRoleText()}</span>
-                      </div>
-                    </div>
-                    <div className="user-actions">
-                      <button 
-                        className="dashboard-btn"
-                        onClick={handleDashboardClick}
-                        title="Моят профил"
-                      >
-                        Моят профил
-                      </button>
-                      <button 
-                        className="logout-btn"
-                        onClick={handleLogoutClick}
-                        title="Изход"
-                      >
-                        <LogOut className="logout-icon" />
-                      </button>
-                    </div>
-                  </div>
+              {currentUser ? (
+  <div className="user-menu">
+   <div className="user-info">
+  <div className="user-avatar">
+    <User className="user-avatar-icon" />
+  </div>
+  <div className="user-details">
+    <span className="user-name">{getUserDisplayName()}</span>
+    <span className="user-role">{getUserRoleText()}</span>
+  </div>
+</div>
+    <div className="user-actions">
+      <button 
+        className="auth-btn dashboard-btn"
+        onClick={handleDashboardClick}
+        title="Моят профил"
+      >
+        Моят профил
+      </button>
+      <button 
+        className="auth-btn logout-btn"
+        onClick={handleLogoutClick}
+        title="Изход"
+      >
+        <LogOut className="logout-icon" />
+        <span>Изход</span>
+      </button>
+    </div>
+  </div>
                 ) : (
                   <>
                     <button 
@@ -225,11 +226,12 @@ const Header: React.FC = () => {
                       <span>Вход</span>
                     </button>
                     <button 
-                      className="auth-btn register-btn"
-                      onClick={handleRegisterClick}
-                    >
-                      <span>Стани читател</span>
-                    </button>
+  className="auth-btn register-btn"
+  onClick={handleRegisterClick}
+>
+  <BookOpen className="user-icon" />
+  <span>Стани читател</span>
+</button>
                   </>
                 )}
               </div>
@@ -291,13 +293,13 @@ const Header: React.FC = () => {
                   </div>
                   <div className="mobile-user-actions">
                     <button 
-                      className="mobile-dashboard-btn"
+                      className="mobile-auth-btn dashboard-btn"
                       onClick={handleDashboardClick}
                     >
                       Моят профил
                     </button>
                     <button 
-                      className="mobile-logout-btn"
+                      className="mobile-auth-btn logout-btn"
                       onClick={handleLogoutClick}
                     >
                       <LogOut className="mobile-logout-icon" />
@@ -308,14 +310,14 @@ const Header: React.FC = () => {
               ) : (
                 <>
                   <button 
-                    className="mobile-auth-btn mobile-login-btn"
+                    className="mobile-auth-btn login-btn"
                     onClick={handleLoginClick}
                   >
                     <User className="user-icon" />
                     <span>Вход в профил</span>
                   </button>
                   <button 
-                    className="mobile-auth-btn mobile-register-btn"
+                    className="mobile-auth-btn register-btn"
                     onClick={handleRegisterClick}
                   >
                     <span>Регистрация</span>
