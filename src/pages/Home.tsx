@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, ArrowRight, BookOpen, Users, Clock, Star, Calendar, MapPin, Quote, User } from 'lucide-react';
+import { Search, ArrowRight, BookOpen, Users, Clock, Star, Calendar, MapPin, Quote, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,7 @@ interface Event {
 
 const Home: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -47,7 +48,7 @@ const Home: React.FC = () => {
         return isFuture;
       });
       
-      setEvents(futureEvents.slice(0, 4));
+      setEvents(futureEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
       // Fallback данни
@@ -77,6 +78,32 @@ const Home: React.FC = () => {
           currentParticipants: 12,
           allowedRoles: ['reader'],
           organizer: 'Петър Георгиев'
+        },
+        {
+          id: '3',
+          title: 'Литературен клуб',
+          date: '22 Декември',
+          time: '17:00',
+          endTime: '18:30',
+          location: 'Главна зала',
+          description: 'Дискусия за съвременна българска литература',
+          maxParticipants: 25,
+          currentParticipants: 18,
+          allowedRoles: ['reader', 'librarian'],
+          organizer: 'Анна Петрова'
+        },
+        {
+          id: '4',
+          title: 'Творческа работилница',
+          date: '25 Декември',
+          time: '10:00',
+          endTime: '12:00',
+          location: 'Творческа стая',
+          description: 'Работилница по писане на разкази',
+          maxParticipants: 12,
+          currentParticipants: 6,
+          allowedRoles: ['reader'],
+          organizer: 'Георги Димитров'
         }
       ]);
     }
@@ -119,6 +146,12 @@ const Home: React.FC = () => {
     // Записването ще стане ръчно от потребителя в dashboard
     navigate('/dashboard');
   };
+
+  const toggleShowAllEvents = () => {
+    setShowAllEvents(!showAllEvents);
+  };
+
+  const displayedEvents = showAllEvents ? events : events.slice(0, 6);
 
   useEffect(() => {
     fetchEvents();
@@ -263,52 +296,51 @@ const Home: React.FC = () => {
   return (
     <div className="home-container">
       {/* Modern Hero Section with Background Image */}
-     {/* Modern Hero Section with Background Image */}
-<section className="hero-section">
-  <div className="hero-background">
-    <img 
-      src={libraryImage} 
-      alt="Училищна библиотека" 
-      className="hero-bg-image"
-    />
-    <div className="hero-overlay"></div>
-  </div>
-  
-  <div className="hero-content">
-    <div className="hero-blur-box">
-      <h1 className="hero-title">
-        <span className="hero-main-title">{heroData.title}</span>
-        <span className="hero-subtitle-text">{heroData.subtitle}</span>
-      </h1>
-
-      <p className="hero-description">
-        {heroData.description}
-      </p>
-
-      {/* Search Bar */}
-      <div className="search-container">
-        <div className="search-bar">
-          <Search className="search-icon" />
-          <input
-            type="text"
-            placeholder={heroData.searchPlaceholder}
-            className="search-input"
+      <section className="hero-section">
+        <div className="hero-background">
+          <img 
+            src={libraryImage} 
+            alt="Училищна библиотека" 
+            className="hero-bg-image"
           />
+          <div className="hero-overlay"></div>
         </div>
-      </div>
+        
+        <div className="hero-content">
+          <div className="hero-blur-box">
+            <h1 className="hero-title">
+              <span className="hero-main-title">{heroData.title}</span>
+              <span className="hero-subtitle-text">{heroData.subtitle}</span>
+            </h1>
 
-      <div className="hero-buttons">
-        <button className="btn btn-primary">
-          <span>Разгледай каталога</span>
-          <ArrowRight className="btn-icon" />
-        </button>
-        <button className="btn btn-secondary">
-          Стани читател
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+            <p className="hero-description">
+              {heroData.description}
+            </p>
+
+            {/* Search Bar */}
+            <div className="search-container">
+              <div className="search-bar">
+                <Search className="search-icon" />
+                <input
+                  type="text"
+                  placeholder={heroData.searchPlaceholder}
+                  className="search-input"
+                />
+              </div>
+            </div>
+
+            <div className="hero-buttons">
+              <button className="btn btn-primary">
+                <span>Разгледай каталога</span>
+                <ArrowRight className="btn-icon" />
+              </button>
+              <button className="btn btn-secondary">
+                Стани читател
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Features Section */}
       <section className="features-section">
@@ -395,21 +427,29 @@ const Home: React.FC = () => {
       </section>
 
       {/* Book Animation Section */}
-      <section className="book-animation-section">
-        <div className="book3d-container">
-          <div className="bg"></div>
-          <div className="container">
-            <div className="box-holder" style={{ animationPlayState: 'running !important' }}>
-              <div className="box--front"></div>
-              <div className="box--side-left"></div>
-              <div className="box--side-right"></div>
-              <div className="box--top"></div>
-              <div className="box--bottom"></div>
-              <div className="box--back"></div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Book Animation Section */}
+<section className="book-animation-section">
+  <div className="bookshelf">
+    <div className="books">
+      <div 
+        className="book" 
+        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
+      ></div>
+      <div 
+        className="book" 
+        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
+      ></div>
+      <div 
+        className="book" 
+        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
+      ></div>
+      <div 
+        className="book" 
+        style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
+      ></div>
+    </div>
+  </div>
+</section>
 
       {/* Events Section */}
       <section className="events-section">
@@ -421,8 +461,8 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="events-grid">
-            {events.map((event, index) => {
+          <div className="events-grid-compact">
+            {displayedEvents.map((event, index) => {
               const colorVariants = [
                 'event-card-green',
                 'event-card-yellow', 
@@ -435,65 +475,45 @@ const Home: React.FC = () => {
               const EventIcon = eventIcons[index % eventIcons.length];
               
               return (
-                <div key={event.id} className={`event-card ${colorClass}`}>
-                  <div className="event-header">
-                    <div className="event-badge">
-                      <Calendar className="event-badge-icon" />
+                <div key={event.id} className={`event-card-compact ${colorClass}`}>
+                  <div className="event-header-compact">
+                    <div className="event-badge-compact">
+                      <Calendar className="event-badge-icon-compact" />
                       <span>Събитие</span>
                     </div>
-                    <div className="event-icon">
-                      <EventIcon className="event-icon-svg" />
+                    <div className="event-icon-compact">
+                      <EventIcon className="event-icon-svg-compact" />
                     </div>
                   </div>
                   
-                  <div className="event-content">
-                    <p>Тема:</p>
-                    <h3 className="event-title">{event.title}</h3>
-                    <p className="event-description">{event.description}</p>
+                  <div className="event-content-compact">
+                    <h3 className="event-title-compact">{event.title}</h3>
+                    <p className="event-description-compact">{event.description}</p>
                     
-                    <div className="event-details">
-                      <div className="event-detail">
-                        <div className="detail-icon-wrapper">
-                          <Calendar className="detail-icon" />
-                        </div>
-                        <div className="detail-content">
-                          <span className="detail-label">Дата</span>
-                          <span className="detail-value">{event.date}</span>
-                        </div>
+                    <div className="event-details-compact">
+                      <div className="event-detail-compact">
+                        <Calendar className="detail-icon-compact" />
+                        <span className="detail-value-compact">{event.date}</span>
                       </div>
-                      <div className="event-detail">
-                        <div className="detail-icon-wrapper">
-                          <Clock className="detail-icon" />
-                        </div>
-                        <div className="detail-content">
-                          <span className="detail-label">Час</span>
-                          <span className="detail-value">{event.time} - {event.endTime}</span>
-                        </div>
+                      <div className="event-detail-compact">
+                        <Clock className="detail-icon-compact" />
+                        <span className="detail-value-compact">{event.time}</span>
                       </div>
-                      <div className="event-detail">
-                        <div className="detail-icon-wrapper">
-                          <MapPin className="detail-icon" />
-                        </div>
-                        <div className="detail-content">
-                          <span className="detail-label">Място</span>
-                          <span className="detail-value">{event.location}</span>
-                        </div>
-                      </div>
-                      <div className="event-detail">
-                        <div className="detail-icon-wrapper">
-                          <User className="detail-icon" />
-                        </div>
-                        <div className="detail-content">
-                          <span className="detail-label">Организатор</span>
-                          <span className="detail-value">{event.organizer || "Не е посочен"}</span>
-                        </div>
+                      <div className="event-detail-compact">
+                        <MapPin className="detail-icon-compact" />
+                        <span className="detail-value-compact">{event.location}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="event-footer">
+                  <div className="event-footer-compact">
+                    <div className="event-spots-compact">
+                      <span className="spots-text-compact">
+                        {getAvailableSpots(event)} свободни места
+                      </span>
+                    </div>
                     <button 
-                      className={`event-btn ${!user || isEventFull(event) ? 'event-btn-disabled' : ''}`}
+                      className={`event-btn-compact ${!user || isEventFull(event) ? 'event-btn-disabled-compact' : ''}`}
                       disabled={!user || isEventFull(event)}
                       onClick={() => handleEventRegistration(event)}
                     >
@@ -505,16 +525,9 @@ const Home: React.FC = () => {
                             : 'Запиши се'
                         }
                       </span>
-                      {!isEventFull(event) && user && <ArrowRight className="btn-icon" />}
+                      {!isEventFull(event) && user && <ArrowRight className="btn-icon-compact" />}
                     </button>
-                    <div className="event-spots">
-                      <span className="spots-text">
-                        Оставащи места: {getAvailableSpots(event)}
-                      </span>
-                    </div>
                   </div>
-                  
-                  <div className="event-gradient"></div>
                 </div>
               );
             })}
@@ -524,6 +537,27 @@ const Home: React.FC = () => {
             <div className="no-events">
               <Calendar className="no-events-icon" />
               <p>В момента няма предстоящи събития</p>
+            </div>
+          )}
+
+          {events.length > 4 && (
+            <div className="events-toggle-container">
+              <button 
+                className="events-toggle-btn"
+                onClick={toggleShowAllEvents}
+              >
+                {showAllEvents ? (
+                  <>
+                    <ChevronUp className="toggle-icon" />
+                    <span>Покажи по-малко събития</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="toggle-icon" />
+                    <span>Покажи всички събития ({events.length})</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
