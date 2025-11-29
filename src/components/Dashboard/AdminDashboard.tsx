@@ -321,7 +321,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   // Промяна на брой места
-  const updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
+  const _updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
     if (maxParticipants < 1) return;
     
     const event = events.find(e => e.id === eventId);
@@ -437,7 +437,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   // Helper function to safely check for conflicts
-  const getLocationConflictStatus = (location: string, date: string, time: string, endTime: string, excludeEventId?: string) => {
+  const _getLocationConflictStatus = (location: string, date: string, time: string, endTime: string, excludeEventId?: string) => {
     if (!date || !time || !endTime) return false;
     return hasBookingConflict(location, date, time, endTime, excludeEventId);
   };

@@ -1,7 +1,7 @@
 // src/components/Dashboard/UserDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc, writeBatch } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from "firebase/firestore";
 import { BookOpen, Calendar, Search, Trash2, Clock, CheckCircle, User } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLocation } from "react-router-dom";

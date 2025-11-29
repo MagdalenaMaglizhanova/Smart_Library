@@ -69,7 +69,7 @@ const EventsPage: React.FC = () => {
     return event.currentParticipants >= event.maxParticipants;
   };
 
-  const formatDate = (dateString: string) => {
+  const _formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('bg-BG', {
       weekday: 'long',
