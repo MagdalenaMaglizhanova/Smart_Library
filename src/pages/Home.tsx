@@ -731,17 +731,18 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
 </div>
 
           <div className="calendar-events-grid">
-            {displayedEvents.map((event, index) => {
-              const calendarDate = formatDateForCalendar(event.date);
-              const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
-              const colorClass = colorVariants[index % colorVariants.length];
-              
-              return (
-                <div key={event.id} className="calendar-event-card">
-                  <div className={`calendar-date ${colorClass}`}>
-                    <div className="calendar-day">{calendarDate.day}</div>
-                    <div className="calendar-month">{calendarDate.month}</div>
-                    <div className="calendar-weekday">{calendarDate.weekday}</div>
+  {displayedEvents.map((event, index) => {
+    const calendarDate = formatDateForCalendar(event.date);
+    const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
+    const colorClass = colorVariants[index % colorVariants.length];
+    
+    return (
+      <div key={event.id} className="calendar-event-card">
+        {/* Добавете home- клас тук */}
+        <div className={`calendar-date home-calendar-date ${colorClass}`}>
+          <div className="calendar-day home-calendar-day">{calendarDate.day}</div>
+          <div className="calendar-month home-calendar-month">{calendarDate.month}</div>
+          <div className="calendar-weekday home-calendar-weekday">{calendarDate.weekday}</div>
                   </div>
 
                   <div className="calendar-event-content">

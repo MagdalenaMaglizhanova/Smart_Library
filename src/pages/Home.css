@@ -3363,9 +3363,9 @@
   }
 }
 
-.calendar-date .calendar-day,
-.calendar-date .calendar-month,
-.calendar-date .calendar-weekday {
+.home-calendar-day,
+.home-calendar-month,
+.home-calendar-weekday {
   color: white !important;
 }
 
