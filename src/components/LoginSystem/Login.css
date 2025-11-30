@@ -53,49 +53,6 @@
   background: var(--gradient-logo);
 }
 
-.floating-book {
-  position: absolute;
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  animation: float 6s ease-in-out infinite;
-}
-
-.floating-book.book-1 {
-  top: 20%;
-  left: 10%;
-  animation-delay: 0s;
-}
-
-.floating-book.book-2 {
-  top: 60%;
-  right: 15%;
-  animation-delay: 2s;
-}
-
-.floating-book.book-3 {
-  bottom: 20%;
-  left: 20%;
-  animation-delay: 4s;
-}
-
-.book-icon {
-  width: 24px;
-  height: 24px;
-  color: var(--primary-green);
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(5deg); }
-}
-
 /* Main Content Layout */
 .login-content {
   display: grid;
@@ -111,97 +68,62 @@
   min-height: 700px;
 }
 
-/* Left Side - Illustration */
+/* Left Side - Illustration with Background Image */
 .login-illustration {
-  background: var(--gradient-glass);
-  padding: 3rem;
-  display: flex;
-  align-items: center;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.login-illustration::before {
-  content: '';
+.illustration-background {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--gradient-logo);
-  opacity: 0.05;
+  z-index: 1;
+}
+
+.background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.85) 0%, rgba(34, 197, 94, 0.75) 50%, rgba(22, 163, 74, 0.85) 100%);
+  z-index: 2;
 }
 
 .illustration-container {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   width: 100%;
+  padding: 3rem;
 }
 
-/* Logo in Illustration */
-.illustration-logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 3rem;
-}
-
-.illustration-logo .logo-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  background: var(--gradient-logo);
-  border-radius: 12px;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-  border: 2px solid transparent;
-}
-
-.illustration-logo .logo-icon {
-  width: 24px;
-  height: 24px;
-  color: white;
-}
-
-.illustration-logo .logo-text-container {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.illustration-logo .logo-text {
-  font-weight: 800;
-  font-size: 1.4rem;
-  background: var(--gradient-logo);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.5px;
-}
-
-.illustration-logo .logo-subtitle {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--neutral-600);
-  margin-top: -2px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-/* Illustration Content */
+/* Illustration Content - ПРЕИМЕНУВАНИ КЛАСОВЕ */
 .illustration-content {
   text-align: center;
 }
 
-.library-icon-wrapper {
+/* ПРЕИМЕНУВАНИ: library-icon-wrapper -> login-library-icon-wrapper */
+.login-library-icon-wrapper {
   position: relative;
   display: inline-block;
   margin-bottom: 2rem;
 }
 
-.library-icon {
+/* ПРЕИМЕНУВАНИ: logo-icon-wrapper -> login-logo-icon-wrapper */
+.login-logo-icon-wrapper {
   width: 80px;
   height: 80px;
   background: var(--gradient-logo);
@@ -215,13 +137,15 @@
   z-index: 2;
 }
 
-.library-main-icon {
+/* ПРЕИМЕНУВАНИ: logo-icon -> login-logo-icon */
+.login-logo-icon {
   width: 40px;
   height: 40px;
   color: white;
 }
 
-.icon-glow {
+/* ПРЕИМЕНУВАНИ: icon-glow -> login-icon-glow */
+.login-icon-glow {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -238,23 +162,42 @@
 .illustration-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: var(--neutral-800);
+  color: white;
   margin-bottom: 1rem;
   line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.gradient-text {
-  background: var(--gradient-logo);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ПРЕИМЕНУВАНИ: logo-display -> login-logo-display */
+.login-logo-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+/* ПРЕИМЕНУВАНИ: logo-text -> login-logo-text */
+.login-logo-text {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ПРЕИМЕНУВАНИ: logo-subtitle -> login-logo-subtitle */
+.login-logo-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .illustration-subtitle {
   font-size: 1.1rem;
-  color: var(--neutral-600);
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 3rem;
   line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Features List */
@@ -271,29 +214,31 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   border-radius: 16px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
 }
 
 .feature-item:hover {
   transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-green);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .feature-icon {
   width: 48px;
   height: 48px;
-  background: var(--gradient-glass-green);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-green);
+  color: white;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
 }
 
 .feature-text {
@@ -305,16 +250,18 @@
 
 .feature-title {
   font-weight: 700;
-  color: var(--neutral-800);
+  color: white;
   margin-bottom: 0.25rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .feature-desc {
   font-size: 0.9rem;
-  color: var(--neutral-600);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Right Side - Login Form */
+/* Right Side - Login Form (остава същия) */
 .login-form-section {
   padding: 3rem;
   display: flex;
@@ -376,7 +323,7 @@
   flex-shrink: 0;
 }
 
-/* Form Inputs - ОПРАВЕНИ ПОЗИЦИИ */
+/* Form Inputs */
 .input-group {
   margin-bottom: 1.5rem;
 }
@@ -395,28 +342,15 @@
   align-items: center;
 }
 
-.input-icon {
-  position: absolute;
-  left: 1rem;
-  color: var(--neutral-500);
-  width: 20px;
-  height: 20px;
-  z-index: 2;
-  top: 50%;
-  transform: translateY(-50%); /* Центриране на иконата вертикално */
-}
-
 .form-input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem; /* Оставяме място за иконата отляво */
+  padding: 1rem;
   border: 2px solid var(--neutral-200);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
-  box-sizing: border-box; /* Важно за правилно изчисляване на ширината */
-  position: relative;
-  z-index: 1;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -441,7 +375,7 @@
   border-radius: 4px;
   transition: all 0.3s ease;
   top: 50%;
-  transform: translateY(-50%); /* Центриране на бутона вертикално */
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -457,6 +391,7 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
+
 /* Form Options */
 .form-options {
   display: flex;
@@ -641,195 +576,6 @@
   font-size: 0.875rem;
 }
 
-/* Password Strength Indicator */
-.password-strength {
-  margin-top: 10px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.strength-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.strength-checks {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.strength-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  transition: all 0.3s ease;
-}
-
-.strength-check.valid {
-  color: var(--success-color);
-}
-
-.strength-check.valid svg {
-  stroke: var(--success-color);
-}
-
-.strength-check:not(.valid) svg {
-  stroke: var(--text-secondary);
-  opacity: 0.5;
-}
-
-/* Password Mismatch Warning */
-.password-mismatch {
-  color: var(--error-color);
-  font-size: 12px;
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.password-mismatch::before {
-  content: "⚠";
-  font-size: 14px;
-}
-
-/* Terms Links */
-.terms-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.terms-link:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
-}
-
-/* Disabled Button State */
-.login-button.disabled {
-  background: rgba(74, 85, 104, 0.5);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.login-button.disabled:hover {
-  background: rgba(74, 85, 104, 0.5);
-  transform: none;
-}
-
-/* Success Color Variable */
-:root {
-  --success-color: #48bb78;
-}
-
-/* Enhanced Checkbox for Terms */
-.checkbox-container {
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-/* CAPTCHA Styles */
-.captcha-container {
-  margin-top: 8px;
-}
-
-.captcha-question {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.captcha-refresh {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.captcha-refresh:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.captcha-refresh:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.captcha-error {
-  color: var(--error-color);
-  font-size: 12px;
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.captcha-error::before {
-  content: "⚠";
-  font-size: 14px;
-}
-
-.input-error {
-  border-color: var(--error-color) !important;
-  background: rgba(239, 68, 68, 0.05) !important;
-}
-
-.input-error:focus {
-  border-color: var(--error-color) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
-}
-
-/* Role Information Styles */
-.role-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 12px;
-  margin-top: 20px;
-}
-
-.info-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.info-text {
-  font-size: 14px;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-
-.info-text strong {
-  color: #3b82f6;
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   .login-content {
@@ -864,10 +610,6 @@
     font-size: 1.75rem;
   }
   
-  .illustration-title {
-    font-size: 2rem;
-  }
-  
   .form-options {
     flex-direction: column;
     gap: 1rem;
@@ -880,20 +622,12 @@
     padding: 1rem;
   }
   
-  .feature-item {
-    padding: 1rem;
-  }
-  
   .input-container {
     position: relative;
   }
   
-  .input-icon {
-    left: 0.75rem;
-  }
-  
   .form-input {
-    padding-left: 2.5rem;
+    padding-left: 1rem;
   }
   
   .password-toggle {
@@ -902,43 +636,59 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .login-container {
-    background: linear-gradient(135deg, var(--neutral-900) 0%, var(--neutral-800) 50%, var(--green-darker) 100%);
-  }
-  
-  .login-content {
-    background: var(--glass-dark);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .login-form-section {
-    background: var(--neutral-800);
-  }
-  
-  .form-input {
-    background: var(--neutral-700);
-    border-color: var(--neutral-600);
-    color: var(--neutral-100);
-  }
-  
-  .form-input:focus {
-    border-color: var(--primary-green);
-  }
-  
-  .feature-item {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .illustration-title,
-  .form-title {
-    color: var(--neutral-100);
-  }
-  
-  .illustration-subtitle,
-  .form-subtitle,
-  .feature-desc {
-    color: var(--neutral-300);
-  }
+[data-theme='dark'] .login-container {
+  background: linear-gradient(135deg, var(--neutral-900) 0%, var(--neutral-800) 50%, var(--green-darker) 100%);
 }
+
+[data-theme='dark'] .login-content {
+  background: var(--glass-dark);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .login-form-section {
+  background: var(--neutral-800);
+}
+
+[data-theme='dark'] .form-input {
+  background: var(--neutral-700);
+  border-color: var(--neutral-600);
+  color: var(--neutral-100);
+}
+
+[data-theme='dark'] .form-input:focus {
+  border-color: var(--primary-green);
+}
+
+[data-theme='dark'] .form-title {
+  color: var(--neutral-100);
+}
+
+[data-theme='dark'] .form-subtitle {
+  color: var(--neutral-300);
+}
+
+[data-theme='dark'] .input-label {
+  color: var(--neutral-200);
+}
+
+[data-theme='dark'] .checkbox-container {
+  color: var(--neutral-200);
+}
+
+[data-theme='dark'] .register-text {
+  color: var(--neutral-300);
+}
+
+[data-theme='dark'] .footer-text {
+  color: var(--neutral-400);
+}
+
+[data-theme='dark'] .login-divider {
+  color: var(--neutral-400);
+}
+
+[data-theme='dark'] .login-divider::before,
+[data-theme='dark'] .login-divider::after {
+  background: var(--neutral-600);
+}
+

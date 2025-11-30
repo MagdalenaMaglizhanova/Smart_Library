@@ -30,11 +30,11 @@ const Login: React.FC = () => {
         
         // Пренасочване според ролята
         if (userData.role === "admin") {
-          navigate("/admin"); // пренасочване към админ дашборда
+          navigate("/admin");
         } else if (userData.role === "librarian") {
-          navigate("/librarian"); // пренасочване към библиотекарски панел
+          navigate("/librarian");
         } else {
-          navigate("/dashboard"); // пренасочване към потребителски дашборд
+          navigate("/dashboard");
         }
       } else {
         setErrorMessage("Потребителят няма зададена роля");
@@ -68,28 +68,22 @@ const Login: React.FC = () => {
       </div>
 
       <div className="login-content">
-        {/* Left Side - Enhanced Illustration */}
+        {/* Left Side - Enhanced Illustration with Background Image */}
         <div className="login-illustration">
+          <div className="illustration-background">
+            <img 
+              src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+              alt="Library" 
+              className="background-image"
+            />
+            <div className="background-overlay"></div>
+          </div>
+          
           <div className="illustration-container">
-            {/* Main Content */}
+            {/* Main Content - ОРИГИНАЛНОТО ЛОГО И СТРУКТУРА */}
             <div className="illustration-content">
-              <div className="library-icon-wrapper">
-                <div className="logo-icon-wrapper">
-                  <BookOpen className="logo-icon" />
-                </div>
-                <div className="icon-glow"></div>
-              </div>
-              
-              <div className="welcome-text">
-                <h1 className="illustration-title">
-                  Добре дошли в
-                </h1>
-                <div className="logo-display">
-                  <span className="logo-text">Smart School Library</span>
-                  <p><span className="logo-subtitle">Място за знания и вдъхновение</span></p>
-                </div>
-              </div>
-
+              <h1 className="illustration-title">Добре дошли в </h1>  
+              <h1 className="illustration-title highlight">Smart School Library</h1>
               <p className="illustration-subtitle">
                 Влезте в своя акаунт за достъп до богатата колекция от книги, ресурси и учебни помагала
               </p>
@@ -129,7 +123,7 @@ const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side - Enhanced Login Form */}
+        {/* Right Side - Enhanced Login Form (ОСТАВА СЪЩИЯ) */}
         <div className="login-form-section">
           <div className="form-glass-container">
             <form onSubmit={handleLogin} className="login-form">

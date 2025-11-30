@@ -1,10 +1,9 @@
-// src/components/LoginSystem/Register.tsx
 import React, { useState, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/firebase";
-import { BookOpen, Eye, EyeOff, Shield, CheckCircle, RefreshCw, UserCircle } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Shield, CheckCircle, RefreshCw, UserCircle, ArrowRight } from "lucide-react";
 import './Login.css';
 
 const Register: React.FC = () => {
@@ -140,28 +139,22 @@ const Register: React.FC = () => {
       </div>
 
       <div className="login-content">
-        {/* Left Side - Enhanced Illustration */}
+        {/* Left Side - Enhanced Illustration with Background Image */}
         <div className="login-illustration">
+          <div className="illustration-background">
+            <img 
+              src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+              alt="Library" 
+              className="background-image"
+            />
+            <div className="background-overlay"></div>
+          </div>
+          
           <div className="illustration-container">
             {/* Main Content */}
             <div className="illustration-content">
-              <div className="library-icon-wrapper">
-                <div className="logo-icon-wrapper">
-                  <BookOpen className="logo-icon" />
-                </div>
-                <div className="icon-glow"></div>
-              </div>
-              
-              <div className="welcome-text">
-                <h1 className="illustration-title">
-                  Присъединете се към
-                </h1>
-                <div className="logo-display">
-                  <span className="logo-text">Smart School Library</span>
-                  <p><span className="logo-subtitle">Място за знания и вдъхновение</span></p>
-                </div>
-              </div>
-
+              <h1 className="illustration-title">Присъединете се към </h1>  
+              <h1 className="illustration-title highlight">Smart School Library</h1>
               <p className="illustration-subtitle">
                 Създайте своя акаунт и получете достъп до богатата колекция от книги, ресурси и учебни помагала
               </p>
@@ -410,6 +403,7 @@ const Register: React.FC = () => {
                 ) : (
                   <>
                     <span>Създай акаунт</span>
+                    <ArrowRight className="button-icon" />
                   </>
                 )}
               </button>
