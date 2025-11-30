@@ -1,0 +1,33 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Основна форма на разтворена книга -->
+  <path d="M24 5H12C10.3431 5 9 6.34315 9 8V24C9 25.6569 10.3431 27 12 27H24C25.6569 27 27 25.6569 27 24V8C27 6.34315 25.6569 5 24 5Z" fill="#16a34a" stroke="#15803d" stroke-width="1.2"/>
+  
+  <!-- Лява корица -->
+  <path d="M12 5C10.8954 5 10 5.89543 10 7V25C10 26.1046 10.8954 27 12 27H17V5H12Z" fill="#15803d"/>
+  
+  <!-- Дясна корица -->
+  <path d="M20 5H24C25.1046 5 26 5.89543 26 7V25C26 26.1046 25.1046 27 24 27H20V5Z" fill="#166534"/>
+  
+  <!-- Централна част/коридор -->
+  <path d="M17 5H20V27H17V5Z" fill="#eab308"/>
+  
+  <!-- Детайли на коридора -->
+  <path d="M17 5H20V7H17V5Z" fill="#d97706"/>
+  <path d="M17 25H20V27H17V25Z" fill="#d97706"/>
+  
+  <!-- Линии за текст (лява страница) -->
+  <path d="M13 9H15V10H13V9Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M13 12H16V13H13V12Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M13 15H14V16H13V15Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M13 18H16V19H13V18Z" fill="#ffffff" fill-opacity="0.9"/>
+  
+  <!-- Линии за текст (дясна страница) -->
+  <path d="M22 9H24V10H22V9Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M22 12H25V13H22V12Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M22 15H23V16H22V15Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M22 18H25V19H22V18Z" fill="#ffffff" fill-opacity="0.9"/>
+  
+  <!-- Декоративни елементи -->
+  <circle cx="15" cy="22" r="0.8" fill="#eab308"/>
+  <circle cx="22" cy="22" r="0.8" fill="#eab308"/>
+</svg>

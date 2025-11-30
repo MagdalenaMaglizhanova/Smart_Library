@@ -111,8 +111,8 @@ const Footer: React.FC = () => {
               <div className="contact-item">
                 <MapPin className="contact-icon" />
                 <div>
-                  <p className="contact-text">ул. "Примерна" №123</p>
-                  <p className="contact-text">София, България</p>
+                  <p className="contact-text">бул. „Пещерско шосе 26“</p>
+                  <p className="contact-text">Пловдив, България</p>
                 </div>
               </div>
               

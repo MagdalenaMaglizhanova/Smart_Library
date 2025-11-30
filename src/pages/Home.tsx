@@ -11,7 +11,14 @@ import {
   Star, 
   User, 
   Search, 
-  Quote 
+  Quote,
+  Newspaper,
+  Eye,
+  Share2,
+  Heart,
+  Bookmark,
+  Tag,
+  ExternalLink
 } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -19,7 +26,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 import './Home.css';
-import libraryImage from '../assets/images/1.jpg';
+import libraryImage from '../assets/images/2.jpg';
+import library from '../assets/images/library.png';
 
 interface Event {
   id: string;
@@ -36,23 +44,36 @@ interface Event {
   timestamp?: Date;
 }
 
+interface News {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  image: string;
+  date: string;
+  author: string;
+  category: string;
+  tags: string[];
+  views: number;
+  likes: number;
+}
+
 const Home: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [news, setNews] = useState<News[]>([]);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [showAllNews, setShowAllNews] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   // Нова функция за парсване на дати - поддържа и ISO и български формат
   const parseEventDate = (dateString: string, timeString: string = "00:00"): Date => {
-    // Проверяваме дали датата е в ISO формат (2025-12-18)
     if (dateString.includes('-')) {
       const [year, month, day] = dateString.split('-').map(Number);
       const [hours, minutes] = timeString.split(':').map(Number);
-      // Месеците в JavaScript започват от 0, затова month - 1
       return new Date(year, month - 1, day, hours, minutes);
     }
     
-    // Ако не е ISO формат, прилагаме българския парсър
     const months: { [key: string]: number } = {
       'януари': 0, 'февруари': 1, 'март': 2, 'април': 3,
       'май': 4, 'юни': 5, 'юли': 6, 'август': 7,
@@ -76,7 +97,6 @@ const Home: React.FC = () => {
   // Функция за форматиране на датата за показване в български стил
   const formatDateForDisplay = (dateString: string): string => {
     if (dateString.includes('-')) {
-      // ISO формат - конвертираме към български
       const [_year, month, day] = dateString.split('-').map(Number);
       const monthsBg = [
         'януари', 'февруари', 'март', 'април', 'май', 'юни',
@@ -84,8 +104,17 @@ const Home: React.FC = () => {
       ];
       return `${day} ${monthsBg[month - 1]}`;
     }
-    // Ако вече е в български формат, връщаме както е
     return dateString;
+  };
+console.log(formatDateForDisplay("2024-12-25")); // Пример за тестване
+  // Функция за форматиране на дата за календар
+  const formatDateForCalendar = (dateString: string) => {
+    const date = parseEventDate(dateString);
+    return {
+      day: date.getDate(),
+      month: date.toLocaleDateString('bg-BG', { month: 'short' }),
+      weekday: date.toLocaleDateString('bg-BG', { weekday: 'short' })
+    };
   };
 
   // Зареждане на събития от Firestore
@@ -94,8 +123,6 @@ const Home: React.FC = () => {
       const snapshot = await getDocs(collection(db, "events"));
       const eventsData: Event[] = snapshot.docs.map(doc => {
         const data = doc.data();
-        
-        // Създаваме timestamp за сортиране с новата функция
         const eventTimestamp = parseEventDate(data.date, data.time);
         
         return { 
@@ -105,43 +132,28 @@ const Home: React.FC = () => {
         } as Event;
       });
       
-      // Филтрираме и сортираме събитията
       const currentDate = new Date();
-      
-      // Филтрираме само бъдещите събития
       const futureEvents = eventsData.filter(event => {
         if (!event.date || !event.timestamp) return false;
-        
-        // Проверяваме дали събитието е бъдеще (включително днешните, които не са приключили)
         const eventEndTime = parseEventDate(event.date, event.endTime);
         return eventEndTime >= currentDate;
       });
       
-      // Сортираме по дата (най-близките първи)
       futureEvents.sort((a, b) => {
         if (!a.timestamp || !b.timestamp) return 0;
         return a.timestamp.getTime() - b.timestamp.getTime();
       });
 
-      // DEBUG: Принтирайте събитията за проверка
-      console.log('Сортирани събития:', futureEvents.map(event => ({
-        title: event.title,
-        date: event.date,
-        formattedDate: formatDateForDisplay(event.date),
-        timestamp: event.timestamp
-      })));
-      
       setEvents(futureEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
-      // Fallback данни - също филтрирани и сортирани
       const currentDate = new Date();
       
       const fallbackEvents = [
         {
           id: '1',
           title: 'Среща с писател',
-          date: '2025-12-15', // Променено на ISO формат
+          date: '2025-12-15',
           time: '14:00',
           endTime: '15:30',
           location: 'Читалня',
@@ -203,7 +215,79 @@ const Home: React.FC = () => {
     }
   };
 
-  // ✅ ПРОМЕНЕНА ФУНКЦИЯ - само пренасочване, без автоматично записване
+  // Зареждане на новини
+  const fetchNews = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "news"));
+      const newsData: News[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as News));
+      
+      // Сортиране по дата (най-новите първи)
+      newsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setNews(newsData);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      // Fallback новини
+      const fallbackNews: News[] = [
+        {
+          id: '1',
+          title: 'Нова колекция от детски книги',
+          excerpt: 'Разширяваме колекцията си с над 200 нови заглавия за деца и юноши',
+          content: 'Библиотеката е обогатила колекцията си с най-новите заглавия в детската и юношеска литература...',
+          image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          date: '2024-12-10',
+          author: 'Мария Иванова',
+          category: 'Нови книги',
+          tags: ['книги', 'деца', 'нови заглавия'],
+          views: 156,
+          likes: 23
+        },
+        {
+          id: '2',
+          title: 'Дигитална библиотека - вече достъпна',
+          excerpt: 'Започваме с дигитални услуги - книги онлайн за всички читатели',
+          content: 'С гордость представяме нашата нова дигитална платформа...',
+          image: 'https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSqSQCwBRu8DVNP62v6c2czLbqmp3RrfIRY5LAT5IITN9mt1XAxjMcfx8kl9LEWVSsIEUsNlJSP',
+          date: '2024-12-08',
+          author: 'Петър Георгиев',
+          category: 'Дигитални услуги',
+          tags: ['дигитални', 'онлайн', 'е-книги'],
+          views: 203,
+          likes: 45
+        },
+        {
+          id: '3',
+          title: 'Рекордна посещаемост този месец',
+          excerpt: 'Над 500 посетители за месец ноември - нов рекорд за библиотеката',
+          content: 'Библиотеката отчете рекордна посещаемост за месец ноември...',
+          image: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          date: '2024-12-05',
+          author: 'Анна Петрова',
+          category: 'Новини',
+          tags: ['посещаемост', 'рекорд', 'активност'],
+          views: 189,
+          likes: 34
+        },
+        {
+          id: '4',
+          title: 'Състезание за млади поети',
+          excerpt: 'Обявяваме национално състезание за млади таланти в поезията',
+          content: 'Под патронажа на Министерството на културата, библиотеката организира...',
+          image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          date: '2024-12-01',
+          author: 'Георги Димитров',
+          category: 'Събития',
+          tags: ['състезание', 'поезия', 'млади таланти'],
+          views: 278,
+          likes: 67
+        }
+      ];
+      setNews(fallbackNews);
+    }
+  };
+
   const handleEventRegistration = (event: Event) => {
     if (!user) {
       alert('Моля, влезте в профила си, за да се запишете за събитието!');
@@ -215,8 +299,6 @@ const Home: React.FC = () => {
       return;
     }
 
-    // ✅ САМО ПРОНАСОЧВАНЕ към dashboard
-    // Записването ще стане ръчно от потребителя в dashboard
     navigate('/dashboard');
   };
 
@@ -224,26 +306,32 @@ const Home: React.FC = () => {
     setShowAllEvents(!showAllEvents);
   };
 
+  const toggleShowAllNews = () => {
+    setShowAllNews(!showAllNews);
+  };
+
   const displayedEvents = showAllEvents ? events : events.slice(0, 6);
+  const displayedNews = showAllNews ? news : news.slice(0, 3);
 
   useEffect(() => {
     fetchEvents();
+    fetchNews();
   }, []);
 
   // Hero Section Data
   const heroData = {
-    title: 'Училищна Библиотека',
-    subtitle: 'Открий света на знанието',
-    description: 'Нашата библиотека предлага богата колекция от книги, учебни помагала и ресурси за всички ученици и учители.',
-    searchPlaceholder: 'Търсете книги, автори или теми...'
-  };
+  title: 'Smart School Library',
+  subtitle: 'Училищна библиотека',
+  description: 'Място за знания и вдъхновение. Нашата библиотека предлага богата колекция от книги, учебни помагала и ресурси за всички ученици и учители.',
+  searchPlaceholder: 'Търсете книги, автори или теми...'
+};
 
   // Features Data
   const features = [
     {
       icon: BookOpen,
       title: 'Богата колекция',
-      description: 'Над 10,000 книги за всички възрасти и интереси'
+      description: 'Над 10,000 книги и учебници за всички специалности'
     },
     {
       icon: Users,
@@ -253,12 +341,12 @@ const Home: React.FC = () => {
     {
       icon: Clock,
       title: 'Онлайн резервации',
-      description: 'Резервирайте книги онлайн и ги вземете когато ви е удобно'
+      description: 'Резервирайте книги онлайн и ги вземете в удобно за Вас време'
     },
     {
       icon: Star,
       title: 'Съвременна среда',
-      description: 'Модерно обзавеждане и уютна атмосфера за четене'
+      description: 'Модерно обзавеждане и уютна атмосфера за организирани събития'
     }
   ];
 
@@ -366,6 +454,15 @@ const Home: React.FC = () => {
     return getAvailableSpots(event) <= 0;
   };
 
+  const formatNewsDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('bg-BG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="home-container">
       {/* Modern Hero Section with Background Image */}
@@ -382,13 +479,14 @@ const Home: React.FC = () => {
         <div className="hero-content">
           <div className="hero-blur-box">
             <h1 className="hero-title">
-              <span className="hero-main-title">{heroData.title}</span>
-              <span className="hero-subtitle-text">{heroData.subtitle}</span>
-            </h1>
+  <span className="handwritten-hero">{heroData.title}</span>
+  <p></p>
+  <span className="handwritten-hero-sub">{heroData.subtitle}</span>
+</h1>
 
-            <p className="hero-description">
-              {heroData.description}
-            </p>
+<p className="hero-description">
+  {heroData.description}
+</p>
 
             {/* Search Bar */}
             <div className="search-container">
@@ -419,12 +517,12 @@ const Home: React.FC = () => {
       <section className="features-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Защо да изберете нашата библиотека?</h2>
-            <p className="section-subtitle">
-              Предлагаме модерни услуги и богата колекция, които правят четенето 
-              удоволствие за всеки ученик и учител.
-            </p>
-          </div>
+  <h2 className="handwritten-title">Защо да изберете нашата библиотека?</h2>
+  <p className="section-subtitle">
+    Предлагаме модерни услуги и богата колекция, които правят четенето 
+    удоволствие за всеки ученик и учител.
+  </p>
+</div>
           <div className="features-grid">
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
@@ -447,11 +545,11 @@ const Home: React.FC = () => {
       <section className="catalog-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Препоръчани книги</h2>
-            <p className="section-subtitle">
-              Открийте най-популярните заглавия в нашата библиотека
-            </p>
-          </div>
+  <h2 className="handwritten-title">Препоръчани книги</h2>
+  <p className="section-subtitle">
+    Открийте най-популярните заглавия в нашата библиотека
+  </p>
+</div>
 
           <div className="books-grid">
             {featuredBooks.map((book) => (
@@ -499,6 +597,102 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* News Section */}
+      <section className="news-section">
+        <div className="container">
+          <div className="section-header">
+  <div className="section-header-top">
+    <Newspaper className="section-title-icon" />
+    <h2 className="handwritten-title">Новини и Събития</h2>
+  </div>
+  <p className="section-subtitle">
+    Най-новите актуализации и събития от библиотеката
+  </p>
+</div>
+
+          <div className="news-grid">
+            {displayedNews.map((newsItem, _index) => (
+              <article key={newsItem.id} className="news-card">
+                <div className="news-image-container">
+                  <img 
+                    src={newsItem.image} 
+                    alt={newsItem.title}
+                    className="news-image"
+                  />
+                  <div className="news-category-tag">
+                    <Tag className="tag-icon" />
+                    <span>{newsItem.category}</span>
+                  </div>
+                  <div className="news-overlay">
+                    <button className="news-action-btn">
+                      <Bookmark className="action-icon" />
+                    </button>
+                    <button className="news-action-btn">
+                      <Share2 className="action-icon" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="news-content">
+                  <div className="news-meta">
+                    <span className="news-date">{formatNewsDate(newsItem.date)}</span>
+                    <span className="news-author">от {newsItem.author}</span>
+                  </div>
+
+                  <h3 className="news-title">{newsItem.title}</h3>
+                  <p className="news-excerpt">{newsItem.excerpt}</p>
+
+                  <div className="news-footer">
+                    <div className="news-stats">
+                      <div className="news-stat">
+                        <Eye className="stat-icon" />
+                        <span>{newsItem.views}</span>
+                      </div>
+                      <div className="news-stat">
+                        <Heart className="stat-icon" />
+                        <span>{newsItem.likes}</span>
+                      </div>
+                    </div>
+
+                    <div className="news-tags">
+                      {newsItem.tags.slice(0, 2).map((tag, tagIndex) => (
+                        <span key={tagIndex} className="news-tag">#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="news-read-more">
+                    <span>Прочети повече</span>
+                    <ExternalLink className="read-more-icon" />
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {news.length > 3 && (
+            <div className="news-toggle-container">
+              <button 
+                className="news-toggle-btn"
+                onClick={toggleShowAllNews}
+              >
+                {showAllNews ? (
+                  <>
+                    <ChevronUp className="toggle-icon" />
+                    <span>Покажи по-малко новини</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="toggle-icon" />
+                    <span>Покажи всички новини ({news.length})</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Book Animation Section */}
       <section className="book-animation-section">
         <div className="bookshelf">
@@ -523,88 +717,86 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Events Section */}
+      {/* Enhanced Events Section with Calendar Design */}
       <section className="events-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Предстоящи събития</h2>
-            <p className="section-subtitle">
-              Участвайте в интересни четения и дискусии
-            </p>
-          </div>
+  <div className="section-header-top">
+    <Calendar className="section-title-icon" />
+    <h2 className="handwritten-title">Предстоящи Събития</h2>
+  </div>
+  <p className="section-subtitle">
+    Участвайте в интересни четения, дискусии и културни прояви
+  </p>
+</div>
 
-          <div className="events-grid-compact">
+          <div className="calendar-events-grid">
             {displayedEvents.map((event, index) => {
-              const colorVariants = [
-                'event-card-green',
-                'event-card-yellow', 
-                'event-card-red',
-                'event-card-primary'
-              ];
+              const calendarDate = formatDateForCalendar(event.date);
+              const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
               const colorClass = colorVariants[index % colorVariants.length];
               
-              const eventIcons = [Users, BookOpen, Users, Star];
-              const EventIcon = eventIcons[index % eventIcons.length];
-              
               return (
-                <div key={event.id} className={`event-card-compact ${colorClass}`}>
-                  <div className="event-header-compact">
-                    <div className="event-badge-compact">
-                      <Calendar className="event-badge-icon-compact" />
-                      <span>Събитие</span>
-                    </div>
-                    <div className="event-icon-compact">
-                      <EventIcon className="event-icon-svg-compact" />
-                    </div>
+                <div key={event.id} className="calendar-event-card">
+                  <div className={`calendar-date ${colorClass}`}>
+                    <div className="calendar-day">{calendarDate.day}</div>
+                    <div className="calendar-month">{calendarDate.month}</div>
+                    <div className="calendar-weekday">{calendarDate.weekday}</div>
                   </div>
-                  
-                  <div className="event-content-compact">
-                    <h3 className="event-title-compact">{event.title}</h3>
-                    <p className="event-description-compact">{event.description}</p>
-                    
-                    <div className="event-details-compact">
-                      <div className="event-detail-compact">
-                        <Calendar className="detail-icon-compact" />
-                        <span className="detail-value-compact">{formatDateForDisplay(event.date)}</span>
+
+                  <div className="calendar-event-content">
+                    <div className="event-header-calendar">
+                      <h3 className="event-title-calendar">{event.title}</h3>
+                      <div className="event-time-badge">
+                        <Clock className="time-badge-icon" />
+                        <span>{event.time} - {event.endTime}</span>
                       </div>
-                      <div className="event-detail-compact">
-                        <Clock className="detail-icon-compact" />
-                        <span className="detail-value-compact">
-                          от {event.time} до {event.endTime}
+                    </div>
+
+                    <p className="event-description-calendar">{event.description}</p>
+
+                    <div className="event-details-calendar">
+                      <div className="event-detail-row">
+                        <MapPin className="detail-icon-calendar" />
+                        <span className="detail-text-calendar">{event.location}</span>
+                      </div>
+                      <div className="event-detail-row">
+                        <User className="detail-icon-calendar" />
+                        <span className="detail-text-calendar">{event.organizer}</span>
+                      </div>
+                    </div>
+
+                    <div className="event-footer-calendar">
+                      <div className="participants-info">
+                        <Users className="participants-icon" />
+                        <span className="participants-text">
+                          {event.currentParticipants} / {event.maxParticipants} записани
                         </span>
+                        {getAvailableSpots(event) > 0 && (
+                          <span className="spots-available">
+                            {getAvailableSpots(event)} свободни места
+                          </span>
+                        )}
                       </div>
-                      <div className="event-detail-compact">
-                        <MapPin className="detail-icon-compact" />
-                        <span className="detail-value-compact">{event.location}</span>
-                      </div>
-                      <div className="event-detail-compact">
-                        <User className="detail-icon-compact" />
-                        <span className="detail-value-compact">{event.organizer}</span>
-                      </div>
+
+                      <button 
+                        className={`event-register-btn ${colorClass} ${
+                          !user || isEventFull(event) ? 'event-btn-disabled' : ''
+                        }`}
+                        disabled={!user || isEventFull(event)}
+                        onClick={() => handleEventRegistration(event)}
+                      >
+                        <span>
+                          {!user 
+                            ? 'Влезте, за да се запишете' 
+                            : isEventFull(event) 
+                              ? 'Събитието е пълно' 
+                              : 'Запиши се'
+                          }
+                        </span>
+                        {!isEventFull(event) && user && <ArrowRight className="register-icon" />}
+                      </button>
                     </div>
-                  </div>
-                  
-                  <div className="event-footer-compact">
-                    <div className="event-spots-compact">
-                      <span className="spots-text-compact">
-                        {getAvailableSpots(event)} свободни места
-                      </span>
-                    </div>
-                    <button 
-                      className={`event-btn-compact ${!user || isEventFull(event) ? 'event-btn-disabled-compact' : ''}`}
-                      disabled={!user || isEventFull(event)}
-                      onClick={() => handleEventRegistration(event)}
-                    >
-                      <span>
-                        {!user 
-                          ? 'Влезте, за да се запишете' 
-                          : isEventFull(event) 
-                            ? 'Пълно' 
-                            : 'Запиши се'
-                        }
-                      </span>
-                      {!isEventFull(event) && user && <ArrowRight className="btn-icon-compact" />}
-                    </button>
                   </div>
                 </div>
               );
@@ -645,11 +837,11 @@ const Home: React.FC = () => {
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Какво казват нашите читатели?</h2>
-            <p className="section-subtitle">
-              Отзиви от ученици, учители и родители
-            </p>
-          </div>
+  <h2 className="handwritten-title">Какво казват нашите читатели?</h2>
+  <p className="section-subtitle">
+    Отзиви от ученици, учители и родители
+  </p>
+</div>
 
           <div className="testimonials-grid">
             {testimonials.map((testimonial, index) => (
@@ -673,12 +865,12 @@ const Home: React.FC = () => {
       <section className="about-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">За библиотеката</h2>
-            <p className="section-subtitle">
-              Нашата мисия е да създадем вдъхновяваща среда за учене и откриване 
-              на нови светове чрез четенето.
-            </p>
-          </div>
+  <h2 className="handwritten-title">За библиотеката</h2>
+  <p className="section-subtitle">
+    Нашата мисия е да създадем вдъхновяваща среда за учене и откриване 
+    на нови светове чрез четенето.
+  </p>
+</div>
 
           <div className="about-content">
             <div className="about-text">
@@ -720,7 +912,7 @@ const Home: React.FC = () => {
             <div className="about-visual">
               <div className="image-container">
                 <img 
-                  src={libraryImage} 
+                  src={library} 
                   alt="Библиотеката" 
                   className="about-image"
                 />

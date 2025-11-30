@@ -1,35 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, BookOpen, User, ChevronDown, Home, Calendar, Info, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Menu, 
+  X, 
+  BookOpen, 
+  User, 
+  ChevronDown, 
+  Home, 
+  Calendar, 
+  LogOut,
+  Sun,
+  Moon
+} from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import './Header.css';
 
+interface UserData {
+  role?: 'admin' | 'librarian' | 'reader';
+  profile?: {
+    displayName?: string;
+  };
+}
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<any>;
+}
+
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // Тема
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }, [theme]);
+
+  // Скрол
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    
-    // Проверка за логнат потребител
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Authentication
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        // Вземаме допълнителни данни от Firestore
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
-            setUserData(userDoc.data());
+            setUserData(userDoc.data() as UserData);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -41,13 +85,10 @@ const Header: React.FC = () => {
       setLoading(false);
     });
 
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  const navigation = [
+  const navigation: NavigationItem[] = [
     { name: 'Начало', href: '/', icon: Home },
     { name: 'Каталог', href: '#каталог', icon: BookOpen },
     { name: 'Събития', href: '/events', icon: Calendar }, 
@@ -58,18 +99,18 @@ const Header: React.FC = () => {
     { name: 'Учебни помагала', href: '#' },
     { name: 'Читателски клуб', href: '#' },
     { name: 'Работно време', href: '#' },
-    { name: 'За нас', href: '#за-нас', icon: Info },
+    { name: 'За нас', href: '#за-нас' },
   ];
 
-  const handleLoginClick = () => {
+  const handleLoginClick = useCallback(() => {
     setIsMenuOpen(false);
     navigate('/login');
-  };
+  }, [navigate]);
 
-  const handleRegisterClick = () => {
+  const handleRegisterClick = useCallback(() => {
     setIsMenuOpen(false);
     navigate('/register');
-  };
+  }, [navigate]);
 
   const handleLogoutClick = async () => {
     try {
@@ -83,20 +124,19 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleLogoClick = () => {
+  const handleLogoClick = useCallback(() => {
     navigate('/');
-  };
+  }, [navigate]);
 
-  const handleNavClick = (href: string, e: React.MouseEvent) => {
+  const handleNavClick = useCallback((href: string, e: React.MouseEvent) => {
     if (href.startsWith('/')) {
       e.preventDefault();
       navigate(href);
       setIsMenuOpen(false);
     }
-    // Ако е anchor link (#каталог и др.), оставяме default behavior
-  };
+  }, [navigate]);
 
-  const handleDashboardClick = () => {
+  const handleDashboardClick = useCallback(() => {
     if (userData?.role === 'admin') {
       navigate('/admin');
     } else if (userData?.role === 'librarian') {
@@ -105,16 +145,16 @@ const Header: React.FC = () => {
       navigate('/dashboard');
     }
     setIsMenuOpen(false);
-  };
+  }, [userData?.role, navigate]);
 
-  const getUserDisplayName = () => {
+  const getUserDisplayName = useCallback((): string => {
     if (userData?.profile?.displayName) {
       return userData.profile.displayName;
     }
     return currentUser?.email?.split('@')[0] || 'Потребител';
-  };
+  }, [currentUser, userData]);
 
-  const getUserRoleText = () => {
+  const getUserRoleText = useCallback((): string => {
     switch (userData?.role) {
       case 'admin':
         return 'Администратор';
@@ -125,210 +165,257 @@ const Header: React.FC = () => {
       default:
         return 'Потребител';
     }
-  };
+  }, [userData]);
+
+  const isActiveLink = useCallback((href: string): boolean => {
+    return location.pathname === href || location.hash === href;
+  }, [location]);
 
   return (
-    <>
-      <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
-        <div className="header-container">
-          {/* Logo - най-вляво */}
-          <div className="logo-section">
-            <div className="logo-wrapper" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-              <div className="logo-icon-wrapper">
-                <BookOpen className="logo-icon" />
-              </div>
-              <div className="logo-text-container">
-                <span className="logo-text">Smart School Library</span>
-                <span className="logo-subtitle">Място за знания и вдъхновение</span>
-              </div>
+    <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
+      <div className="header-container">
+        {/* Logo Section */}
+        <div className="logo-section">
+          <div 
+            className="logo-wrapper" 
+            onClick={handleLogoClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogoClick()}
+          >
+            <div className="logo-icon-wrapper">
+              <BookOpen className="logo-icon" />
             </div>
-          </div>
-
-          {/* Desktop Navigation - в центъра */}
-          <nav className="desktop-nav">
-            <div className="nav-links">
-              {navigation.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="nav-link"
-                    onClick={(e) => handleNavClick(item.href, e)}
-                  >
-                    <IconComponent className="nav-link-icon" />
-                    {item.name}
-                  </a>
-                );
-              })}
-              
-              {/* Dropdown for Quick Links */}
-              <div className="dropdown">
-                <button className="dropdown-btn">
-                  <span>Бързи връзки</span>
-                  <ChevronDown className="dropdown-icon" />
-                </button>
-                <div className="dropdown-content">
-                  {quickLinks.map((link) => (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="dropdown-link"
-                    >
-                      {link.name}
-                    </a>
-                  ))}
-                </div>
-              </div>
+            <div className="logo-text-container">
+              <span className="logo-text">Smart School Library</span>
+              <span className="logo-subtitle">Място за знания и вдъхновение</span>
             </div>
-          </nav>
-
-          {/* Auth Buttons - най-вдясно */}
-          <div className="header-actions">
-            {!loading && (
-              <div className="auth-section">
-              {currentUser ? (
-  <div className="user-menu">
-   <div className="user-info">
-  <div className="user-avatar">
-    <User className="user-avatar-icon" />
-  </div>
-  <div className="user-details">
-    <span className="user-name">{getUserDisplayName()}</span>
-    <span className="user-role">{getUserRoleText()}</span>
-  </div>
-</div>
-    <div className="user-actions">
-      <button 
-        className="auth-btn dashboard-btn"
-        onClick={handleDashboardClick}
-        title="Моят профил"
-      >
-        Моят профил
-      </button>
-      <button 
-        className="auth-btn logout-btn"
-        onClick={handleLogoutClick}
-        title="Изход"
-      >
-        <LogOut className="logout-icon" />
-        <span>Изход</span>
-      </button>
-    </div>
-  </div>
-                ) : (
-                  <>
-                    <button 
-                      className="auth-btn login-btn"
-                      onClick={handleLoginClick}
-                    >
-                      <User className="user-icon" />
-                      <span>Вход</span>
-                    </button>
-                    <button 
-  className="auth-btn register-btn"
-  onClick={handleRegisterClick}
->
-  <BookOpen className="user-icon" />
-  <span>Стани читател</span>
-</button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Mobile Menu Button */}
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="menu-icon" /> : <Menu className="menu-icon" />}
-            </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className={`mobile-menu ${isMenuOpen ? 'mobile-menu-open' : ''}`}>
-          <div className="mobile-nav">
+        {/* Desktop Navigation */}
+        <nav className="desktop-nav" aria-label="Основна навигация">
+          <div className="nav-links">
             {navigation.map((item) => {
               const IconComponent = item.icon;
+              const isActive = isActiveLink(item.href);
+              
               return (
                 <a
                   key={item.name}
                   href={item.href}
-                  className="mobile-nav-link"
+                  className={`nav-link ${isActive ? 'nav-link-active' : ''}`}
                   onClick={(e) => handleNavClick(item.href, e)}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <IconComponent className="mobile-nav-icon" />
+                  <IconComponent className="nav-link-icon" />
                   {item.name}
                 </a>
               );
             })}
             
-            <div className="mobile-quick-links">
-              <h4 className="quick-links-title">Бързи връзки</h4>
-              {quickLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="mobile-quick-link"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
+            {/* Quick Links Dropdown */}
+            <div className="dropdown">
+              <button 
+                className="dropdown-btn"
+                aria-expanded="false"
+                aria-haspopup="true"
+              >
+                <span>Бързи връзки</span>
+                <ChevronDown className="dropdown-icon" />
+              </button>
+              <div className="dropdown-content">
+                {quickLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="dropdown-link"
+                  >
+                    {link.name}
+                  </a>
+                ))}
+              </div>
             </div>
+          </div>
+        </nav>
 
-            <div className="mobile-auth-section">
+        {/* Header Actions */}
+        <div className="header-actions">
+          {/* Theme Toggle */}
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Превключване към ${theme === 'light' ? 'тъмна' : 'светла'} тема`}
+          >
+            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+
+          {!loading && (
+            <div className="auth-section">
               {currentUser ? (
-                <div className="mobile-user-info">
-                  <div className="mobile-user-details">
-                    <div className="mobile-user-avatar">
-                      <User className="mobile-user-avatar-icon" />
+                <div className="user-menu">
+                  <div className="user-info">
+                    <div className="user-avatar">
+                      <User className="user-avatar-icon" />
                     </div>
-                    <div>
-                      <div className="mobile-user-name">{getUserDisplayName()}</div>
-                      <div className="mobile-user-role">{getUserRoleText()}</div>
+                    <div className="user-details">
+                      <span className="user-name">{getUserDisplayName()}</span>
+                      <span className="user-role">{getUserRoleText()}</span>
                     </div>
                   </div>
-                  <div className="mobile-user-actions">
+                  <div className="user-actions">
                     <button 
-                      className="mobile-auth-btn dashboard-btn"
+                      className="auth-btn dashboard-btn"
                       onClick={handleDashboardClick}
+                      title="Моят профил"
                     >
                       Моят профил
                     </button>
                     <button 
-                      className="mobile-auth-btn logout-btn"
+                      className="auth-btn logout-btn"
                       onClick={handleLogoutClick}
+                      title="Изход"
                     >
-                      <LogOut className="mobile-logout-icon" />
-                      Изход
+                      <LogOut className="logout-icon" />
+                      <span>Изход</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
                   <button 
-                    className="mobile-auth-btn login-btn"
+                    className="auth-btn login-btn"
                     onClick={handleLoginClick}
                   >
                     <User className="user-icon" />
-                    <span>Вход в профил</span>
+                    <span className="btn-text">Вход</span>
                   </button>
                   <button 
-                    className="mobile-auth-btn register-btn"
+                    className="auth-btn register-btn"
                     onClick={handleRegisterClick}
                   >
-                    <span>Регистрация</span>
+                    <BookOpen className="user-icon" />
+                    <span className="btn-text">Стани читател</span>
                   </button>
                 </>
               )}
             </div>
+          )}
+
+          {/* Mobile Menu Button */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? "Затваряне на менюто" : "Отваряне на менюто"}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <X className="menu-icon" /> : <Menu className="menu-icon" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <div 
+        className={`mobile-menu ${isMenuOpen ? 'mobile-menu-open' : ''}`}
+        aria-hidden={!isMenuOpen}
+      >
+        <div className="mobile-nav">
+          {/* Theme Toggle in Mobile */}
+          <div className="mobile-theme-section">
+            <button
+              className="mobile-theme-toggle"
+              onClick={toggleTheme}
+            >
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+              <span>{theme === 'light' ? 'Тъмна тема' : 'Светла тема'}</span>
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          {navigation.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = isActiveLink(item.href);
+            
+            return (
+              <a
+                key={item.name}
+                href={item.href}
+                className={`mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`}
+                onClick={(e) => handleNavClick(item.href, e)}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <IconComponent className="mobile-nav-icon" />
+                {item.name}
+              </a>
+            );
+          })}
+          
+          {/* Quick Links in Mobile */}
+          <div className="mobile-quick-links">
+            <h4 className="quick-links-title">Бързи връзки</h4>
+            {quickLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="mobile-quick-link"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+
+          {/* Auth Section in Mobile */}
+          <div className="mobile-auth-section">
+            {currentUser ? (
+              <div className="mobile-user-info">
+                <div className="mobile-user-details">
+                  <div className="mobile-user-avatar">
+                    <User className="mobile-user-avatar-icon" />
+                  </div>
+                  <div>
+                    <div className="mobile-user-name">{getUserDisplayName()}</div>
+                    <div className="mobile-user-role">{getUserRoleText()}</div>
+                  </div>
+                </div>
+                <div className="mobile-user-actions">
+                  <button 
+                    className="mobile-auth-btn dashboard-btn"
+                    onClick={handleDashboardClick}
+                  >
+                    Моят профил
+                  </button>
+                  <button 
+                    className="mobile-auth-btn logout-btn"
+                    onClick={handleLogoutClick}
+                  >
+                    <LogOut className="mobile-logout-icon" />
+                    Изход
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mobile-auth-buttons">
+                <button 
+                  className="mobile-auth-btn login-btn"
+                  onClick={handleLoginClick}
+                >
+                  <User className="user-icon" />
+                  <span>Вход в профил</span>
+                </button>
+                <button 
+                  className="mobile-auth-btn register-btn"
+                  onClick={handleRegisterClick}
+                >
+                  <BookOpen className="user-icon" />
+                  <span>Регистрация</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 };
 
