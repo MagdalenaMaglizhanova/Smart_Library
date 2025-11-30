@@ -840,3 +840,8 @@
 .event-table-row:nth-child(even) {
   animation-delay: 0.2s;
 }
+.calendar-date .calendar-day,
+.calendar-date .calendar-month,
+.calendar-date .calendar-weekday {
+  color: green !important;
+}
