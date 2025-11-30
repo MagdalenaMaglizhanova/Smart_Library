@@ -3362,3 +3362,10 @@
     font-size: 2rem;
   }
 }
+
+.calendar-date .calendar-day,
+.calendar-date .calendar-month,
+.calendar-date .calendar-weekday {
+  color: white !important;
+}
+
