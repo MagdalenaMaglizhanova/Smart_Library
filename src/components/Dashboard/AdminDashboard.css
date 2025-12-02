@@ -954,3 +954,219 @@
     font-size: 0.875rem;
   }
 }
+
+/* Rooms Header */
+.rooms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.import-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Модал за импортиране */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.help-text {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Различни цветове за заетост */
+.time-slot-cell.scheduled {
+  background-color: #fef3c7; /* жълт за учебни занятия */
+  border-color: #fbbf24;
+}
+
+.time-slot-cell.scheduled:hover {
+  background-color: #fde68a;
+}
+
+.time-slot-cell.booked {
+  background-color: #fee2e2; /* червен за събития */
+  border-color: #f87171;
+}
+
+.time-slot-cell.booked:hover {
+  background-color: #fecaca;
+}
+
+.time-slot-cell.available {
+  background-color: #d1fae5; /* зелен за свободни */
+  border-color: #34d399;
+}
+
+.time-slot-cell.available:hover {
+  background-color: #a7f3d0;
+}
+
+.schedule-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #d97706;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* Легенда */
+.rooms-legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  padding: 15px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.legend-color.available {
+  background-color: #d1fae5;
+  border-color: #34d399;
+}
+
+.legend-color.scheduled {
+  background-color: #fef3c7;
+  border-color: #fbbf24;
+}
+
+.legend-color.booked {
+  background-color: #fee2e2;
+  border-color: #f87171;
+}
+
+/* Booking Cards */
+.booking-card.scheduled {
+  border-left: 4px solid #fbbf24;
+}
+
+.booking-type {
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.booking-details {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Tooltip improvements */
+.event-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.time-slot-cell:hover .event-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.event-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.event-tooltip br {
+  display: none;
+}
+
+.event-tooltip strong + br {
+  display: block;
+}

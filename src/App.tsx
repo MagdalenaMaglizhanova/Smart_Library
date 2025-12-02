@@ -9,6 +9,7 @@ import LibrarianDashboard from "./components/Dashboard/LibrarianDashboard";
 import UserDashboard from "./components/Dashboard/UserDashboard";
 import EventsPage from "./pages/EventsPage"; // Добавена нова страница
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import AIResourcesPage from "./pages/AIResourcesPage"; // Добавена нова страница
 
 function App() {
   // Protected route за всички логнати потребители
@@ -82,6 +83,14 @@ function App() {
             element={
               <Layout>
                 <EventsPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/ai-resources"
+            element={
+              <Layout>
+                <AIResourcesPage />
               </Layout>
             }
           />

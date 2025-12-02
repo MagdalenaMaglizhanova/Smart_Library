@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
-import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building } from "lucide-react";
+import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload } from "lucide-react";
 import './AdminDashboard.css';
 
 interface User {
@@ -33,12 +33,35 @@ interface RoomBooking {
   endTime: string;
   eventId: string;
   eventTitle: string;
+  type: 'event';
 }
+
+interface ClassSchedule {
+  subject: string;
+  teacher: string;
+  className: string;
+}
+
+interface ScheduleBooking {
+  id: string;
+  room: string;
+  dayOfWeek: number;
+  period: number;
+  startTime: string;
+  endTime: string;
+  classSchedules: ClassSchedule[];
+  semester: string;
+  academicYear: string;
+  type: 'schedule';
+}
+
+type BookingInfo = RoomBooking | ScheduleBooking;
 
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [roomBookings, setRoomBookings] = useState<RoomBooking[]>([]);
+  const [scheduleBookings, setScheduleBookings] = useState<ScheduleBooking[]>([]);
   const [newEventTitle, setNewEventTitle] = useState<string>("");
   const [newEventDesc, setNewEventDesc] = useState<string>("");
   const [newEventDate, setNewEventDate] = useState<string>("");
@@ -52,8 +75,23 @@ const AdminDashboard: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Event>>({});
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [editingCell, setEditingCell] = useState<{room: string, timeSlot: string, booking: BookingInfo | null} | null>(null);
+  const [addingEventFromCell, setAddingEventFromCell] = useState<{room: string, timeSlot: string} | null>(null);
+  
+  const [isImportingSchedule, setIsImportingSchedule] = useState(false);
+  const [importData, setImportData] = useState("");
+  const [selectedRoomForImport, setSelectedRoomForImport] = useState("1303");
+  const [academicYear, setAcademicYear] = useState("2024-2025");
+  const [semester, setSemester] = useState<"winter" | "summer">("winter");
 
-  // Опции за падащи менюта
+  // Форма за добавяне на събитие от клетка
+  const [cellEventTitle, setCellEventTitle] = useState<string>("");
+  const [cellEventDesc, setCellEventDesc] = useState<string>("");
+  const [cellEventStartTime, setCellEventStartTime] = useState<string>("");
+  const [cellEventEndTime, setCellEventEndTime] = useState<string>("");
+  const [cellEventMaxParticipants, setCellEventMaxParticipants] = useState<number>(20);
+  const [cellEventOrganizer, setCellEventOrganizer] = useState<string>("");
+
   const locationOptions = [
     "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
     "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
@@ -68,7 +106,6 @@ const AdminDashboard: React.FC = () => {
     "17:00-18:00", "18:00-19:00", "19:00-20:00"
   ];
 
-  // Генериране на часове с минути
   const generateTimeOptions = () => {
     const options = [];
     for (let hour = 7; hour <= 19; hour++) {
@@ -82,19 +119,40 @@ const AdminDashboard: React.FC = () => {
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
-  // Валидация на час
   const validateTime = (time: string): boolean => {
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
   };
 
-  // Проверка дали краен час е след начален час
   const validateTimeRange = (startTime: string, endTime: string): boolean => {
     if (!startTime || !endTime) return true;
     return endTime > startTime;
   };
 
-  // Проверка за конфликти на резервации
+  // Хелпер функция за конвертиране на време в минути
+  const convertToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + (minutes || 0);
+  };
+
+  // Функция за проверка за припокриване на интервали
+  const hasTimeOverlap = (
+    slotStart: string, 
+    slotEnd: string, 
+    eventStart: string, 
+    eventEnd: string
+  ): boolean => {
+    const slotStartMin = convertToMinutes(slotStart);
+    const slotEndMin = convertToMinutes(slotEnd);
+    const eventStartMin = convertToMinutes(eventStart);
+    const eventEndMin = convertToMinutes(eventEnd);
+    
+    // Припокриване се случва когато:
+    // 1. Събитието започва преди края на слота И завършва след началото на слота
+    return eventStartMin < slotEndMin && eventEndMin > slotStartMin;
+  };
+
+  // Проверка за конфликт с всички резервации (събития + график)
   const hasBookingConflict = (
     room: string, 
     date: string, 
@@ -102,63 +160,64 @@ const AdminDashboard: React.FC = () => {
     endTime: string, 
     excludeEventId?: string
   ): boolean => {
-    return roomBookings.some(booking => {
-      // Пропускаме събитието, което редактираме
+    // Проверка за конфликт с резервации за събития
+    const eventConflict = roomBookings.some(booking => {
       if (excludeEventId && booking.id === excludeEventId) return false;
       
-      // Проверяваме дали е същата стая и дата
       if (booking.room !== room || booking.date !== date) return false;
       
-      // Проверяваме за застъпване на времеви интервали
       const newStart = startTime;
       const newEnd = endTime;
       const existingStart = booking.time;
       const existingEnd = booking.endTime;
       
-      // Конфликт възниква, ако:
-      // - новият начален час е между съществуващия интервал
-      // - новият краен час е между съществуващия интервал  
-      // - съществуващият интервал е напълно в новия интервал
       return (
         (newStart >= existingStart && newStart < existingEnd) ||
         (newEnd > existingStart && newEnd <= existingEnd) ||
         (newStart <= existingStart && newEnd >= existingEnd)
       );
     });
+    
+    if (eventConflict) return true;
+    
+    // Проверка за конфликт с графични занятия
+    const dayOfWeek = new Date(date).getDay();
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      const scheduleConflicts = scheduleBookings.filter(
+        schedule => schedule.room === room && schedule.dayOfWeek === dayOfWeek
+      );
+      
+      const hasScheduleConflict = scheduleConflicts.some(schedule => {
+        const eventStart = startTime;
+        const eventEnd = endTime;
+        const scheduleStart = schedule.startTime;
+        const scheduleEnd = schedule.endTime;
+        
+        return (
+          (eventStart >= scheduleStart && eventStart < scheduleEnd) ||
+          (eventEnd > scheduleStart && eventEnd <= scheduleEnd) ||
+          (eventStart <= scheduleStart && eventEnd >= scheduleEnd)
+        );
+      });
+      
+      return hasScheduleConflict;
+    }
+    
+    return false;
   };
 
-  // Закръгляне на начален час надолу и краен час нагоре
-  const getRoundedTimeRange = (startTime: string, endTime: string): { roundedStart: string, roundedEnd: string } => {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    // Начален час - закръгляме към по-близкия час
-    let roundedStartHours = startHours;
-    if (startMinutes >= 30) {
-      roundedStartHours = startHours + 1;
-    }
-    const roundedStart = `${roundedStartHours.toString().padStart(2, '0')}:00`;
-    
-    // Краен час - закръгляме към по-близкия час
-    let roundedEndHours = endHours;
-    if (endMinutes > 0) {
-      roundedEndHours = endHours + 1;
-    }
-    const roundedEnd = `${roundedEndHours.toString().padStart(2, '0')}:00`;
-    
-    return { roundedStart, roundedEnd };
-  };
-
-  // Генериране на всички часове между закръглените начален и краен час
   const getTimeSlotsInRange = (startTime: string, endTime: string): string[] => {
-    const { roundedStart, roundedEnd } = getRoundedTimeRange(startTime, endTime);
     const slots: string[] = [];
     
-    // Намираме началния и крайния час като числа
-    const startHour = parseInt(roundedStart.split(':')[0]);
-    const endHour = parseInt(roundedEnd.split(':')[0]);
+    // Конвертираме в минути от началото на деня
+    const startMinutes = convertToMinutes(startTime);
+    const endMinutes = convertToMinutes(endTime);
     
-    // Генерираме часовете между началния и крайния час
+    // Взимаме началния час (без минути)
+    const startHour = Math.floor(startMinutes / 60);
+    const endHour = Math.ceil(endMinutes / 60);
+    
+    // Генерираме часове между началния и крайния час
     for (let hour = startHour; hour < endHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       slots.push(timeString);
@@ -166,27 +225,237 @@ const AdminDashboard: React.FC = () => {
     
     return slots;
   };
+console.log(getTimeSlotsInRange);
+  const parseScheduleText = (text: string): { dayOfWeek: number, period: number, startTime: string, endTime: string, classSchedules: ClassSchedule[] }[] => {
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
+    const dayMap: { [key: string]: number } = {
+      'Понеделник': 1,
+      'Вторник': 2,
+      'Сряда': 3,
+      'Четвъртък': 4,
+      'Петък': 5
+    };
+    
+    const scheduleSlots: { dayOfWeek: number, period: number, startTime: string, endTime: string, classSchedules: ClassSchedule[] }[] = [];
+    
+    let currentDay: number = 0;
+    let periodCounter: number = 1;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (dayMap[line] !== undefined) {
+        currentDay = dayMap[line];
+        periodCounter = 1;
+        continue;
+      }
+      
+      if (currentDay > 0 && line.includes('–')) {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          const timeRange = parts[0];
+          const [startTime, endTime] = timeRange.split('–').map(t => t.trim() + ':00');
+          
+          const scheduleText = parts.slice(1).join(' ');
+          let classSchedules: ClassSchedule[] = [];
+          
+          if (scheduleText !== '—' && scheduleText.trim() !== '') {
+            const classParts = scheduleText.split(',').map(part => part.trim()).filter(part => part !== '');
+            
+            classSchedules = classParts.map(part => {
+              const classMatch = part.match(/(\d+[а-яд\.]+)$/);
+              let className = '';
+              let subjectTeacher = part;
+              
+              if (classMatch) {
+                className = classMatch[1];
+                subjectTeacher = part.substring(0, part.length - className.length).trim();
+              }
+              
+              let subject = subjectTeacher;
+              let teacher = '';
+              
+              const teacherMatch = subjectTeacher.match(/\((.+?)\)/);
+              if (teacherMatch) {
+                teacher = teacherMatch[1];
+                subject = subjectTeacher.replace(`(${teacher})`, '').trim();
+              } else {
+                const nameParts = subjectTeacher.split(' ');
+                if (nameParts.length > 1) {
+                  const lastWord = nameParts[nameParts.length - 1];
+                  if (lastWord.match(/^[А-Я][а-я]+$/)) {
+                    teacher = lastWord;
+                    subject = nameParts.slice(0, -1).join(' ');
+                  }
+                }
+              }
+              
+              return {
+                subject: subject || 'Неизвестен предмет',
+                teacher,
+                className: className || 'Неизвестен клас'
+              };
+            });
+          }
+          
+          if (classSchedules.length > 0) {
+            scheduleSlots.push({
+              dayOfWeek: currentDay,
+              period: periodCounter,
+              startTime,
+              endTime,
+              classSchedules
+            });
+          }
+          
+          periodCounter++;
+        }
+      }
+    }
+    
+    return scheduleSlots;
+  };
 
-  // Проверка дали стаята е заета за конкретен ден и час
-  const isRoomBooked = (room: string, date: string, timeSlot: string) => {
-    return roomBookings.some(booking => 
-      booking.room === room && 
-      booking.date === date &&
-      getTimeSlotsInRange(booking.time, booking.endTime).includes(timeSlot)
+  const importScheduleToFirebase = async () => {
+    if (!importData.trim() || !selectedRoomForImport) {
+      alert("Моля, въведете данни за графика и изберете стая!");
+      return;
+    }
+    
+    try {
+      const scheduleSlots = parseScheduleText(importData);
+      
+      if (scheduleSlots.length === 0) {
+        alert("Не можахме да разчетем графика. Проверете формата на данните!");
+        return;
+      }
+      
+      const existingSchedules = await getDocs(collection(db, "scheduleBookings"));
+      const deletePromises: Promise<void>[] = [];
+      
+      existingSchedules.docs.forEach(doc => {
+        if (doc.data().room === selectedRoomForImport) {
+          deletePromises.push(deleteDoc(doc.ref));
+        }
+      });
+      
+      await Promise.all(deletePromises);
+      
+      const addPromises: Promise<any>[] = [];
+      
+      scheduleSlots.forEach(slot => {
+        const scheduleBooking: Omit<ScheduleBooking, 'id'> = {
+          room: selectedRoomForImport,
+          dayOfWeek: slot.dayOfWeek,
+          period: slot.period,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          classSchedules: slot.classSchedules,
+          semester,
+          academicYear,
+          type: 'schedule'
+        };
+        
+        addPromises.push(addDoc(collection(db, "scheduleBookings"), scheduleBooking));
+      });
+      
+      await Promise.all(addPromises);
+      alert(`Графикът за стая ${selectedRoomForImport} е импортиран успешно! Добавени са ${scheduleSlots.length} часа.`);
+      setIsImportingSchedule(false);
+      setImportData("");
+      fetchScheduleBookings();
+      
+    } catch (error) {
+      console.error("Грешка при импортиране:", error);
+      alert("Грешка при импортиране на графика!");
+    }
+  };
+
+  // Проверка дали стаята е заета от събитие за конкретен час
+  const isRoomBookedByEvent = (room: string, date: string, timeSlotHour: string): boolean => {
+    // timeSlotHour е "13" за 13:00-14:00
+    const slotStart = timeSlotHour + ':00';
+    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
+    
+    return roomBookings.some(booking => {
+      if (booking.room !== room || booking.date !== date) return false;
+      
+      // Проверяваме за припокриване на интервали
+      return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
+    });
+  };
+
+  // Вземане на информация за събитие
+  const getEventInfo = (room: string, date: string, timeSlotHour: string): RoomBooking | null => {
+    const slotStart = timeSlotHour + ':00';
+    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
+    
+    const booking = roomBookings.find(booking => {
+      if (booking.room !== room || booking.date !== date) return false;
+      
+      return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
+    });
+    
+    return booking || null;
+  };
+
+  // Проверка дали стаята е заета в графика за конкретен час
+  const isRoomBookedInSchedule = (room: string, date: string, timeSlotHour: string): boolean => {
+    const dayOfWeek = new Date(date).getDay();
+    if (dayOfWeek < 1 || dayOfWeek > 5) return false;
+    
+    const slotStart = timeSlotHour + ':00';
+    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
+    
+    return scheduleBookings.some(
+      schedule => 
+        schedule.room === room && 
+        schedule.dayOfWeek === dayOfWeek &&
+        hasTimeOverlap(slotStart, slotEnd, schedule.startTime, schedule.endTime)
     );
   };
 
-  // Вземане на информация за резервацията
-  const getBookingInfo = (room: string, date: string, timeSlot: string) => {
-    const booking = roomBookings.find(booking => 
-      booking.room === room && 
-      booking.date === date &&
-      getTimeSlotsInRange(booking.time, booking.endTime).includes(timeSlot)
+  // Вземане на информация за графично занятие
+  const getScheduleInfo = (room: string, date: string, timeSlotHour: string): ScheduleBooking | null => {
+    const dayOfWeek = new Date(date).getDay();
+    if (dayOfWeek < 1 || dayOfWeek > 5) return null;
+    
+    const slotStart = timeSlotHour + ':00';
+    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
+    
+    const schedule = scheduleBookings.find(
+      schedule => 
+        schedule.room === room && 
+        schedule.dayOfWeek === dayOfWeek &&
+        hasTimeOverlap(slotStart, slotEnd, schedule.startTime, schedule.endTime)
     );
-    return booking;
+    
+    return schedule || null;
   };
 
-  // Зареждане на потребители
+  // Проверка дали стаята е заета (събития + график)
+  const isRoomBooked = (room: string, date: string, timeSlotHour: string): boolean => {
+    return isRoomBookedByEvent(room, date, timeSlotHour) || 
+           isRoomBookedInSchedule(room, date, timeSlotHour);
+  };
+console.log(isRoomBooked);
+  // Вземане на информация за резервацията (събитие или график)
+  const getBookingInfo = (room: string, date: string, timeSlotHour: string): BookingInfo | null => {
+    // Първо проверяваме за събития
+    const eventInfo = getEventInfo(room, date, timeSlotHour);
+    if (eventInfo) {
+      return eventInfo;
+    }
+    
+    // След това проверяваме за график
+    const scheduleInfo = getScheduleInfo(room, date, timeSlotHour);
+    if (scheduleInfo) {
+      return scheduleInfo;
+    }
+    
+    return null;
+  };
+
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "users"));
     const usersData: User[] = snapshot.docs.map(doc => ({ 
@@ -196,7 +465,6 @@ const AdminDashboard: React.FC = () => {
     setUsers(usersData);
   };
 
-  // Зареждане на събития
   const fetchEvents = async () => {
     const snapshot = await getDocs(collection(db, "events"));
     const eventsData: Event[] = snapshot.docs.map(doc => ({ 
@@ -207,7 +475,15 @@ const AdminDashboard: React.FC = () => {
     updateRoomBookings(eventsData);
   };
 
-  // Актуализиране на резервациите на стаи
+  const fetchScheduleBookings = async () => {
+    const snapshot = await getDocs(collection(db, "scheduleBookings"));
+    const schedulesData: ScheduleBooking[] = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    } as ScheduleBooking));
+    setScheduleBookings(schedulesData);
+  };
+
   const updateRoomBookings = (eventsData: Event[]) => {
     const bookings: RoomBooking[] = [];
     eventsData.forEach(event => {
@@ -219,7 +495,8 @@ const AdminDashboard: React.FC = () => {
           time: event.time,
           endTime: event.endTime,
           eventId: event.id,
-          eventTitle: event.title
+          eventTitle: event.title,
+          type: 'event'
         });
       }
     });
@@ -229,9 +506,9 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     fetchEvents();
+    fetchScheduleBookings();
   }, []);
 
-  // Промяна на роля на потребител
   const changeUserRole = async (userId: string, newRole: string) => {
     await updateDoc(doc(db, "users", userId), { 
       role: newRole,
@@ -240,14 +517,12 @@ const AdminDashboard: React.FC = () => {
     fetchUsers();
   };
 
-  // Изтриване на потребител
   const deleteUser = async (userId: string) => {
     if (!window.confirm("Сигурни ли сте, че искате да изтриете потребителя?")) return;
     await deleteDoc(doc(db, "users", userId));
     fetchUsers();
   };
 
-  // Създаване на ново събитие
   const createEvent = async () => {
     if (!newEventTitle.trim() || !newEventDate || !newEventTime || !newEventEndTime || !newEventLocation) return;
     
@@ -261,7 +536,6 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    // Проверка за конфликт
     if (hasBookingConflict(newEventLocation, newEventDate, newEventTime, newEventEndTime)) {
       alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
       return;
@@ -284,7 +558,6 @@ const AdminDashboard: React.FC = () => {
 
     await addDoc(collection(db, "events"), eventData);
     
-    // Reset form
     setNewEventTitle("");
     setNewEventDesc("");
     setNewEventDate("");
@@ -297,14 +570,116 @@ const AdminDashboard: React.FC = () => {
     fetchEvents();
   };
 
-  // Изтриване на събитие
+  // Създаване на събитие от клетка
+  const createEventFromCell = async () => {
+    if (!addingEventFromCell || !cellEventTitle.trim() || !selectedDate || !cellEventStartTime || !cellEventEndTime) return;
+    
+    if (!validateTime(cellEventStartTime) || !validateTime(cellEventEndTime)) {
+      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
+      return;
+    }
+
+    if (!validateTimeRange(cellEventStartTime, cellEventEndTime)) {
+      alert("Крайният час трябва да е след началния час!");
+      return;
+    }
+    
+    if (hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)) {
+      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
+      return;
+    }
+    
+    const eventData = {
+      title: cellEventTitle,
+      description: cellEventDesc,
+      date: selectedDate,
+      time: cellEventStartTime,
+      endTime: cellEventEndTime,
+      location: addingEventFromCell.room,
+      maxParticipants: cellEventMaxParticipants,
+      currentParticipants: 0,
+      allowedRoles: ["reader", "librarian"],
+      organizer: cellEventOrganizer,
+      createdAt: new Date(),
+      registrations: []
+    };
+
+    await addDoc(collection(db, "events"), eventData);
+    
+    // Reset form
+    setCellEventTitle("");
+    setCellEventDesc("");
+    setCellEventStartTime("");
+    setCellEventEndTime("");
+    setCellEventMaxParticipants(20);
+    setCellEventOrganizer("");
+    setAddingEventFromCell(null);
+    
+    fetchEvents();
+  };
+
   const deleteEvent = async (eventId: string) => {
     if (!window.confirm("Сигурни ли сте, че искате да изтриете събитието?")) return;
     await deleteDoc(doc(db, "events", eventId));
     fetchEvents();
   };
 
-  // Промяна на разрешени роли за събитие
+  // Функция за изтриване на резервация от клетка
+  const deleteBookingFromCell = async (booking: BookingInfo) => {
+    if (!window.confirm("Сигурни ли сте, че искате да изтриете тази резервация?")) return;
+    
+    try {
+      if (booking.type === 'event') {
+        // Изтриване на събитие
+        await deleteDoc(doc(db, "events", booking.eventId));
+        fetchEvents();
+      } else if (booking.type === 'schedule') {
+        // Изтриване на графично занятие
+        await deleteDoc(doc(db, "scheduleBookings", booking.id));
+        fetchScheduleBookings();
+      }
+      
+      setEditingCell(null);
+      alert("Резервацията е изтрита успешно!");
+    } catch (error) {
+      console.error("Грешка при изтриване:", error);
+      alert("Грешка при изтриване на резервацията!");
+    }
+  };
+
+  // Функция за стартиране на добавяне на събитие от клетка
+  const startAddingEventFromCell = (room: string, timeSlot: string) => {
+    const [slotStart] = timeSlot.split('-');
+    const startHour = parseInt(slotStart);
+    
+    // Автоматично попълване на начален и краен час
+    setCellEventStartTime(`${slotStart}:00`);
+    setCellEventEndTime(`${(startHour + 1).toString().padStart(2, '0')}:00`);
+    
+    setAddingEventFromCell({
+      room,
+      timeSlot
+    });
+  };
+
+  // Функция за редактиране на резервация в клетка
+  const startEditingCell = (room: string, timeSlot: string) => {
+    const [slotStart] = timeSlot.split('-');
+    const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
+    
+    // Ако има резервация, показваме редактора
+    if (bookingInfo) {
+      setEditingCell({
+        room,
+        timeSlot,
+        booking: bookingInfo
+      });
+    } else {
+      // Ако няма резервация, предлагаме да добавим нова
+      startAddingEventFromCell(room, timeSlot);
+    }
+  };
+
   const toggleEventRole = async (eventId: string, role: string) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return;
@@ -320,10 +695,8 @@ const AdminDashboard: React.FC = () => {
     fetchEvents();
   };
 
-  // Промяна на брой места
   const updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
     if (maxParticipants < 1) return;
-    console.log(updateMaxParticipants);
     const event = events.find(e => e.id === eventId);
     if (!event) return;
 
@@ -331,7 +704,7 @@ const AdminDashboard: React.FC = () => {
       alert("Не можете да зададете по-малко места от текущо записаните участници!");
       return;
     }
-
+console.log(updateMaxParticipants);
     await updateDoc(doc(db, "events", eventId), { 
       maxParticipants: maxParticipants,
       updatedAt: new Date()
@@ -339,7 +712,6 @@ const AdminDashboard: React.FC = () => {
     fetchEvents();
   };
 
-  // Започване на редактиране на събитие
   const startEditing = (event: Event) => {
     setEditingEvent(event);
     setEditFormData({
@@ -354,13 +726,11 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  // Отказ от редактиране
   const cancelEditing = () => {
     setEditingEvent(null);
     setEditFormData({});
   };
 
-  // Запазване на промените
   const saveEvent = async () => {
     if (!editingEvent || !editFormData.title?.trim() || !editFormData.date || 
         !editFormData.time || !editFormData.endTime || !editFormData.location) return;
@@ -380,7 +750,6 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    // Проверка за конфликт при редактиране (изключваме текущото събитие)
     if (hasBookingConflict(
       editFormData.location, 
       editFormData.date, 
@@ -407,7 +776,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Промяна на формата за редактиране
   const handleEditFormChange = (field: keyof Event, value: any) => {
     setEditFormData(prev => ({
       ...prev,
@@ -415,7 +783,6 @@ const AdminDashboard: React.FC = () => {
     }));
   };
 
-  // Филтрирани данни
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
@@ -436,7 +803,6 @@ const AdminDashboard: React.FC = () => {
     return event.currentParticipants >= event.maxParticipants;
   };
 
-  // Helper function to safely check for conflicts
   const getLocationConflictStatus = (location: string, date: string, time: string, endTime: string, excludeEventId?: string) => {
     if (!date || !time || !endTime) return false;
     return hasBookingConflict(location, date, time, endTime, excludeEventId);
@@ -445,13 +811,11 @@ console.log(getLocationConflictStatus);
   return (
     <div className="admin-dashboard">
       <div className="dashboard-container">
-        {/* Header */}
         <div className="dashboard-header">
           <h1>Административен Панел</h1>
           <p>Управление на потребители и събития</p>
         </div>
 
-        {/* Search */}
         <div className="search-section">
           <div className="search-box">
             <Search className="search-icon" />
@@ -465,7 +829,6 @@ console.log(getLocationConflictStatus);
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="tabs-section">
           <button 
             className={`tab-button ${activeTab === "users" ? "active" : ""}`}
@@ -490,7 +853,6 @@ console.log(getLocationConflictStatus);
           </button>
         </div>
 
-        {/* Users Tab */}
         {activeTab === "users" && (
           <div className="content-section">
             <h2>Управление на Потребители</h2>
@@ -541,12 +903,10 @@ console.log(getLocationConflictStatus);
           </div>
         )}
 
-        {/* Events Tab */}
         {activeTab === "events" && (
           <div className="content-section">
             <h2>Управление на Събития</h2>
             
-            {/* Create Event Form */}
             <div className="create-event-card">
               <div className="card-header">
                 <h3>Създай Ново Събитие</h3>
@@ -570,7 +930,7 @@ console.log(getLocationConflictStatus);
                       value={newEventDesc}
                       onChange={(e) => setNewEventDesc(e.target.value)}
                       className="form-input textarea"
-                      rows={3}
+                      rows={5}
                     />
                   </div>
                   <div className="form-group">
@@ -693,7 +1053,6 @@ console.log(getLocationConflictStatus);
               </div>
             </div>
 
-            {/* Events List */}
             <div className="events-list-section">
               <h3>Всички Събития</h3>
               <div className="table-container">
@@ -727,7 +1086,7 @@ console.log(getLocationConflictStatus);
                                 onChange={(e) => handleEditFormChange('description', e.target.value)}
                                 className="edit-input textarea"
                                 placeholder="Описание"
-                                rows={2}
+                                rows={4}
                               />
                             </div>
                           ) : (
@@ -969,12 +1328,311 @@ console.log(getLocationConflictStatus);
           </div>
         )}
 
-        {/* Rooms Tab */}
         {activeTab === "rooms" && (
           <div className="content-section">
-            <h2>Заетост на Стаи</h2>
+            <div className="rooms-header">
+              <h2>Заетост на Стаи</h2>
+              <button 
+                onClick={() => setIsImportingSchedule(true)}
+                className="import-btn primary-btn"
+              >
+                <Upload size={16} />
+                Импортирай седмичен график
+              </button>
+            </div>
             
-            {/* Date Picker */}
+            {isImportingSchedule && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3>Импортиране на седмичен график</h3>
+                    <button 
+                      onClick={() => setIsImportingSchedule(false)}
+                      className="close-btn"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Стая</label>
+                      <select
+                        value={selectedRoomForImport}
+                        onChange={(e) => setSelectedRoomForImport(e.target.value)}
+                        className="form-input"
+                      >
+                        {locationOptions.map(room => (
+                          <option key={room} value={room}>{room}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Учебна година</label>
+                      <input
+                        type="text"
+                        value={academicYear}
+                        onChange={(e) => setAcademicYear(e.target.value)}
+                        placeholder="2024-2025"
+                        className="form-input"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Семестър</label>
+                      <select
+                        value={semester}
+                        onChange={(e) => setSemester(e.target.value as "winter" | "summer")}
+                        className="form-input"
+                      >
+                        <option value="winter">Зимен</option>
+                        <option value="summer">Летен</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Данни за график (по денове)</label>
+                      <textarea
+                        value={importData}
+                        onChange={(e) => setImportData(e.target.value)}
+                        placeholder="Понеделник&#10;07:30–08:10 Пре 8д&#10;08:20–09:00 ГА 8д&#10;...&#10;Вторник&#10;07:30–08:10 Мат 8д&#10;..."
+                        className="form-input textarea"
+                        rows={15}
+                      />
+                      <small className="help-text">
+                        Формат: Име на ден, след това всеки ред: времеви интервал предмет клас (може да има повече от един предмет разделени със запетая)
+                      </small>
+                    </div>
+                    
+                    <div className="modal-actions">
+                      <button 
+                        onClick={importScheduleToFirebase}
+                        disabled={!importData.trim()}
+                        className="primary-btn"
+                      >
+                        Импортирай
+                      </button>
+                      <button 
+                        onClick={() => setIsImportingSchedule(false)}
+                        className="secondary-btn"
+                      >
+                        Отказ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Модал за добавяне на събитие от клетка */}
+            {addingEventFromCell && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3>Добавяне на събитие</h3>
+                    <button 
+                      onClick={() => setAddingEventFromCell(null)}
+                      className="close-btn"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="modal-body">
+                    <div className="cell-info">
+                      <p><strong>Стая:</strong> {addingEventFromCell.room}</p>
+                      <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
+                      <p><strong>Час:</strong> {addingEventFromCell.timeSlot}</p>
+                    </div>
+                    
+                    <div className="event-form-grid">
+                      <div className="form-group">
+                        <label>Заглавие на събитието *</label>
+                        <input
+                          type="text"
+                          placeholder="Напр. Среща с писател"
+                          value={cellEventTitle}
+                          onChange={(e) => setCellEventTitle(e.target.value)}
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Описание</label>
+                        <textarea
+                          placeholder="Кратко описание на събитието"
+                          value={cellEventDesc}
+                          onChange={(e) => setCellEventDesc(e.target.value)}
+                          className="form-input textarea"
+                          rows={5}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Начален час *</label>
+                        <select
+                          value={cellEventStartTime}
+                          onChange={(e) => setCellEventStartTime(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Изберете начален час</option>
+                          {timeOptionsWithMinutes.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Краен час *</label>
+                        <select
+                          value={cellEventEndTime}
+                          onChange={(e) => setCellEventEndTime(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Изберете краен час</option>
+                          {timeOptionsWithMinutes.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                        {cellEventStartTime && cellEventEndTime && !validateTimeRange(cellEventStartTime, cellEventEndTime) && (
+                          <div className="validation-error">
+                            Крайният час трябва да е след началния!
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label>Брой места</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          value={cellEventMaxParticipants}
+                          onChange={(e) => setCellEventMaxParticipants(parseInt(e.target.value) || 1)}
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Организатор</label>
+                        <input
+                          type="text"
+                          placeholder="Име на организатора"
+                          value={cellEventOrganizer}
+                          onChange={(e) => setCellEventOrganizer(e.target.value)}
+                          className="form-input"
+                        />
+                      </div>
+                      
+                      <div className="modal-actions">
+                        <button 
+                          onClick={createEventFromCell}
+                          disabled={
+                            !cellEventTitle.trim() || 
+                            !cellEventStartTime || 
+                            !cellEventEndTime || 
+                            !validateTimeRange(cellEventStartTime, cellEventEndTime) ||
+                            hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)
+                          }
+                          className="primary-btn"
+                        >
+                          <Plus size={16} />
+                          Създай Събитие
+                        </button>
+                        <button 
+                          onClick={() => setAddingEventFromCell(null)}
+                          className="secondary-btn"
+                        >
+                          Отказ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Модал за редактиране на клетка */}
+            {editingCell && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3>Резервация</h3>
+                    <button 
+                      onClick={() => setEditingCell(null)}
+                      className="close-btn"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="modal-body">
+                    <div className="cell-info">
+                      <p><strong>Стая:</strong> {editingCell.room}</p>
+                      <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
+                      <p><strong>Час:</strong> {editingCell.timeSlot}</p>
+                      
+                      {editingCell.booking ? (
+                        <div className="booking-details">
+                          <h4>Резервация:</h4>
+                          {editingCell.booking.type === 'event' ? (
+                            <div className="event-booking">
+                              <p><strong>Събитие:</strong> {editingCell.booking.eventTitle}</p>
+                              <p><strong>Време:</strong> {editingCell.booking.time} - {editingCell.booking.endTime}</p>
+                              <p><strong>Тип:</strong> Събитие</p>
+                            </div>
+                          ) : (
+                            <div className="schedule-booking">
+                              <p><strong>Учебни занятия:</strong></p>
+                              {editingCell.booking.classSchedules.map((schedule, index) => (
+                                <div key={index} className="class-item">
+                                  <p><strong>Предмет:</strong> {schedule.subject}</p>
+                                  <p><strong>Клас:</strong> {schedule.className}</p>
+                                  {schedule.teacher && <p><strong>Учител:</strong> {schedule.teacher}</p>}
+                                </div>
+                              ))}
+                              <p><strong>Тип:</strong> Учебно занятие</p>
+                            </div>
+                          )}
+                          
+                          <div className="modal-actions">
+                            <button 
+                              onClick={() => deleteBookingFromCell(editingCell.booking!)}
+                              className="delete-btn"
+                            >
+                              <Trash2 size={16} />
+                              Изтрий резервация
+                            </button>
+                            <button 
+                              onClick={() => setEditingCell(null)}
+                              className="secondary-btn"
+                            >
+                              Затвори
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="no-booking">
+                          <p>Няма резервация за този час и стая.</p>
+                          <div className="modal-actions">
+                            <button 
+                              onClick={() => startAddingEventFromCell(editingCell.room, editingCell.timeSlot)}
+                              className="primary-btn"
+                            >
+                              <Plus size={16} />
+                              Добави събитие
+                            </button>
+                            <button 
+                              onClick={() => setEditingCell(null)}
+                              className="secondary-btn"
+                            >
+                              Затвори
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="date-picker-section">
               <label htmlFor="room-date" className="date-picker-label">
                 Изберете дата:
@@ -989,10 +1647,8 @@ console.log(getLocationConflictStatus);
               />
             </div>
 
-            {/* Rooms Grid */}
             <div className="rooms-grid-container">
               <div className="rooms-timetable">
-                {/* Header Row - Time Slots */}
                 <div className="table-header-row">
                   <div className="corner-cell">Стая/Час</div>
                   {timeSlots.map(time => (
@@ -1002,7 +1658,6 @@ console.log(getLocationConflictStatus);
                   ))}
                 </div>
 
-                {/* Room Rows */}
                 {locationOptions.map(room => (
                   <div key={room} className="table-row">
                     <div className="room-name-cell">
@@ -1011,28 +1666,69 @@ console.log(getLocationConflictStatus);
                     </div>
                     {timeSlots.map(timeSlot => {
                       const [slotStart] = timeSlot.split('-');
-                      const isBooked = isRoomBooked(room, selectedDate, slotStart);
+                      const isEventBooked = isRoomBookedByEvent(room, selectedDate, slotStart);
+                      const isScheduleBooked = isRoomBookedInSchedule(room, selectedDate, slotStart);
                       const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
                       
                       return (
                         <div
                           key={`${room}-${timeSlot}`}
-                          className={`time-slot-cell ${isBooked ? 'booked' : 'available'}`}
+                          className={`time-slot-cell ${
+                            isScheduleBooked ? 'scheduled' : 
+                            isEventBooked ? 'booked' : 'available'
+                          } ${editingCell?.room === room && editingCell?.timeSlot === timeSlot ? 'editing' : ''}`}
+                          onClick={() => startEditingCell(room, timeSlot)}
                           title={
-                            isBooked ? 
-                            `Заето: ${bookingInfo?.eventTitle} (${bookingInfo?.time} - ${bookingInfo?.endTime})` : 
-                            `Свободно: ${timeSlot}`
+                            isScheduleBooked ? 
+                            `Учебни занятия: ${bookingInfo && bookingInfo.type === 'schedule' ? 
+                              bookingInfo.classSchedules.map(s => `${s.subject} (${s.className})${s.teacher ? ` - ${s.teacher}` : ''}`).join(', ') : 
+                              ''}` : 
+                            isEventBooked ? 
+                            `Събитие: ${bookingInfo && bookingInfo.type === 'event' ? 
+                              `${bookingInfo.eventTitle} (${bookingInfo.time} - ${bookingInfo.endTime})` : 
+                              ''}` : 
+                            `Свободно: ${timeSlot} - кликнете за добавяне на събитие`
                           }
                         >
-                          {isBooked && (
+                          {isScheduleBooked && (
+                            <div className="schedule-indicator">
+                              <div className="schedule-dot"></div>
+                              <div className="event-tooltip">
+                                {bookingInfo && bookingInfo.type === 'schedule' && (
+                                  <>
+                                    <strong>Учебни занятия:</strong>
+                                    {bookingInfo.classSchedules.map((schedule, index) => (
+                                      <div key={index}>
+                                        {schedule.subject} {schedule.className}
+                                        {schedule.teacher && ` (${schedule.teacher})`}
+                                      </div>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {isEventBooked && !isScheduleBooked && (
                             <div className="booking-indicator">
                               <div className="event-dot"></div>
                               <div className="event-tooltip">
-                                <strong>{bookingInfo?.eventTitle}</strong>
-                                <br />
-                                {bookingInfo?.time} - {bookingInfo?.endTime}
+                                {bookingInfo && bookingInfo.type === 'event' && (
+                                  <>
+                                    <strong>{bookingInfo.eventTitle}</strong>
+                                    <br />
+                                    {bookingInfo.time} - {bookingInfo.endTime}
+                                  </>
+                                )}
                               </div>
                             </div>
+                          )}
+                          {isScheduleBooked && bookingInfo && bookingInfo.type === 'schedule' && (
+                            <div className="class-count">
+                              {bookingInfo.classSchedules.length}
+                            </div>
+                          )}
+                          {!isScheduleBooked && !isEventBooked && (
+                            <div className="available-text">+</div>
                           )}
                         </div>
                       );
@@ -1042,46 +1738,85 @@ console.log(getLocationConflictStatus);
               </div>
             </div>
 
-            {/* Legend */}
             <div className="rooms-legend">
               <div className="legend-item">
                 <div className="legend-color available"></div>
-                <span>Свободна стая</span>
+                <span>Свободна стая (кликнете за добавяне)</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color scheduled"></div>
+                <span>Учебно занятие</span>
               </div>
               <div className="legend-item">
                 <div className="legend-color booked"></div>
-                <span>Заета стая</span>
+                <span>Резервация за събитие</span>
               </div>
             </div>
 
-            {/* Bookings List */}
             <div className="bookings-list">
               <h3>Резервации за {new Date(selectedDate).toLocaleDateString('bg-BG')}</h3>
-              {roomBookings.filter(booking => booking.date === selectedDate).length > 0 ? (
-                <div className="bookings-grid">
-                  {roomBookings
-                    .filter(booking => booking.date === selectedDate)
-                    .map(booking => (
-                      <div key={booking.id} className="booking-card">
-                        <div className="booking-room">
-                          <Building size={16} />
-                          {booking.room}
+              
+              {(() => {
+                const dayOfWeek = new Date(selectedDate).getDay();
+                const dayBookings = roomBookings.filter(booking => booking.date === selectedDate);
+                const daySchedules = scheduleBookings.filter(schedule => 
+                  schedule.dayOfWeek === dayOfWeek && schedule.classSchedules.length > 0
+                );
+                
+                const totalBookings = dayBookings.length + daySchedules.length;
+                
+                if (totalBookings > 0) {
+                  return (
+                    <div className="bookings-grid">
+                      {dayBookings.map(booking => (
+                        <div key={booking.id} className="booking-card">
+                          <div className="booking-room">
+                            <Building size={16} />
+                            {booking.room}
+                          </div>
+                          <div className="booking-time">
+                            <Clock size={16} />
+                            {booking.time} - {booking.endTime}
+                          </div>
+                          <div className="booking-event">{booking.eventTitle}</div>
+                          <div className="booking-type">Събитие</div>
                         </div>
-                        <div className="booking-time">
-                          <Clock size={16} />
-                          {booking.time} - {booking.endTime}
+                      ))}
+                      {daySchedules.map(schedule => (
+                        <div key={schedule.id} className="booking-card scheduled">
+                          <div className="booking-room">
+                            <Building size={16} />
+                            {schedule.room}
+                          </div>
+                          <div className="booking-time">
+                            <Clock size={16} />
+                            {schedule.startTime} - {schedule.endTime}
+                          </div>
+                          <div className="booking-classes">
+                            {schedule.classSchedules.map((classSchedule, index) => (
+                              <div key={index} className="class-item">
+                                <div className="class-subject">{classSchedule.subject}</div>
+                                <div className="class-details">
+                                  {classSchedule.className}
+                                  {classSchedule.teacher && ` | ${classSchedule.teacher}`}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="booking-type">Учебно занятие</div>
                         </div>
-                        <div className="booking-event">{booking.eventTitle}</div>
-                      </div>
-                    ))
-                  }
-                </div>
-              ) : (
-                <div className="no-bookings">
-                  <Calendar size={32} />
-                  <p>Няма резервации за избраната дата</p>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="no-bookings">
+                      <Calendar size={32} />
+                      <p>Няма резервации за избраната дата</p>
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         )}

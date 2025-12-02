@@ -97,6 +97,7 @@ const Header: React.FC = () => {
   const quickLinks = [
     { name: 'Електронни книги', href: '#' },
     { name: 'Учебни помагала', href: '#' },
+    { name: 'ИИ ресурси за учители', href: '/ai-resources' }, // Променено тук
     { name: 'Читателски клуб', href: '#' },
     { name: 'Работно време', href: '#' },
     { name: 'За нас', href: '#за-нас' },
@@ -129,9 +130,14 @@ const Header: React.FC = () => {
   }, [navigate]);
 
   const handleNavClick = useCallback((href: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    
     if (href.startsWith('/')) {
-      e.preventDefault();
       navigate(href);
+      setIsMenuOpen(false);
+    } else if (href.startsWith('#')) {
+      // Обработка на anchor линкове
+      window.location.hash = href;
       setIsMenuOpen(false);
     }
   }, [navigate]);
@@ -230,6 +236,7 @@ const Header: React.FC = () => {
                     key={link.name}
                     href={link.href}
                     className="dropdown-link"
+                    onClick={(e) => handleNavClick(link.href, e)}
                   >
                     {link.name}
                   </a>
@@ -358,7 +365,7 @@ const Header: React.FC = () => {
                 key={link.name}
                 href={link.href}
                 className="mobile-quick-link"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={(e) => handleNavClick(link.href, e)}
               >
                 {link.name}
               </a>
