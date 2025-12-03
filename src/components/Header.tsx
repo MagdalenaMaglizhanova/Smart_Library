@@ -90,7 +90,7 @@ const Header: React.FC = () => {
 
   const navigation: NavigationItem[] = [
     { name: 'Начало', href: '/', icon: Home },
-    { name: 'Каталог', href: '#каталог', icon: BookOpen },
+    { name: 'Каталог', href: '/catalog', icon: BookOpen },
     { name: 'Събития', href: '/events', icon: Calendar }, 
   ];
 

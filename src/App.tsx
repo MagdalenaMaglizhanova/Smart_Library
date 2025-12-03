@@ -7,9 +7,10 @@ import Register from "./components/LoginSystem/Register";
 import AdminDashboard from "./components/Dashboard/AdminDashboard";
 import LibrarianDashboard from "./components/Dashboard/LibrarianDashboard";
 import UserDashboard from "./components/Dashboard/UserDashboard";
-import EventsPage from "./pages/EventsPage"; // Добавена нова страница
+import EventsPage from "./pages/EventsPage"; 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import AIResourcesPage from "./pages/AIResourcesPage"; // Добавена нова страница
+import AIResourcesPage from "./pages/AIResourcesPage"; 
+import Bookcatalog from "./pages/BookCatalog"; 
 
 function App() {
   // Protected route за всички логнати потребители
@@ -91,6 +92,14 @@ function App() {
             element={
               <Layout>
                 <AIResourcesPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/catalog"
+            element={
+              <Layout>
+                <Bookcatalog />
               </Layout>
             }
           />

@@ -227,7 +227,10 @@ const EventsPage: React.FC = () => {
                           <td className="event-table-cell">
                             <div className="event-title-section">
                               <h3 className="event-title">{event.title}</h3>
-                              <p className="event-description">{event.description}</p>
+                              <div 
+      className="event-description"
+      dangerouslySetInnerHTML={{ __html: event.description }}
+    />
                             </div>
                           </td>
 

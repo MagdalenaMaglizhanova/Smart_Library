@@ -18,7 +18,12 @@ import {
   Heart,
   Bookmark,
   Tag,
-  ExternalLink
+  ExternalLink,
+  X,
+  Info,
+  AlertCircle,
+  CheckCircle,
+  Eye as EyeIcon
 } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -58,11 +63,18 @@ interface News {
   likes: number;
 }
 
+interface EventModalData {
+  event: Event;
+  colorClass: string;
+  calendarDate: any;
+}
+
 const Home: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [showAllNews, setShowAllNews] = useState(false);
+  const [selectedEventModal, setSelectedEventModal] = useState<EventModalData | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -106,7 +118,8 @@ const Home: React.FC = () => {
     }
     return dateString;
   };
-console.log(formatDateForDisplay("2024-12-25")); // Пример за тестване
+  console.log(formatDateForDisplay);
+
   // Функция за форматиране на дата за календар
   const formatDateForCalendar = (dateString: string) => {
     const date = parseEventDate(dateString);
@@ -116,6 +129,32 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       weekday: date.toLocaleDateString('bg-BG', { weekday: 'short' })
     };
   };
+
+  // Функция за форматиране на пълна дата
+  const formatFullDate = (dateString: string): string => {
+    const date = parseEventDate(dateString);
+    return date.toLocaleDateString('bg-BG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long'
+    });
+  };
+
+  // Функция за премахване на HTML тагове и съкращаване на текста
+  // Промени тази функция:
+const truncateText = (html: string, maxChars: number = 200): string => {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  const plainText = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // Съкращаваме текста по брой знаци
+  if (plainText.length <= maxChars) {
+    return plainText;
+  }
+  
+  return plainText.substring(0, maxChars) + '...';
+};
 
   // Зареждане на събития от Firestore
   const fetchEvents = async () => {
@@ -157,7 +196,7 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
           time: '14:00',
           endTime: '15:30',
           location: 'Читалня',
-          description: 'Среща с известен български автор',
+          description: '<h3>Среща с известен български автор</h3><p>Присъединете се към незабравима среща с един от най-известните български автори на съвременната литература. Ще има възможност за дискусия, автографи и лични разговори с писателя.</p><ul><li>Представяне на нови книги</li><li>Въпросник и отговори</li><li>Автограф сесия</li></ul>',
           maxParticipants: 20,
           currentParticipants: 8,
           allowedRoles: ['reader', 'librarian'],
@@ -171,7 +210,7 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
           time: '16:00',
           endTime: '17:30',
           location: 'Детски отдел',
-          description: 'Четене на приказки за най-малките',
+          description: '<h3>Четене на приказки за най-малките</h3><p>Специално събитие за деца от 4 до 8 години. Ще четем любими приказки и ще организираме занимания свързани с прочетените истории.</p><p><strong>Включени активности:</strong></p><ol><li>Четене на приказки</li><li>Рисуване на герои</li><li>Театрална постановка</li></ol>',
           maxParticipants: 15,
           currentParticipants: 12,
           allowedRoles: ['reader'],
@@ -185,7 +224,7 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
           time: '17:00',
           endTime: '18:30',
           location: 'Главна зала',
-          description: 'Дискусия за съвременна българска литература',
+          description: '<h3>Дискусия за съвременна българска литература</h3><p>Дискусия на тема "Съвременната българска литература в контекста на европейските тенденции". Ще обсъждаме творби на млади български автори и тяхното място в световната литература.</p><p><em>Водещ: д-р Александър Петров</em></p>',
           maxParticipants: 25,
           currentParticipants: 18,
           allowedRoles: ['reader', 'librarian'],
@@ -199,7 +238,7 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
           time: '10:00',
           endTime: '12:00',
           location: 'Творческа стая',
-          description: 'Работилница по писане на разкази',
+          description: '<h3>Работилница по писане на разкази</h3><p>Практическа работилница за всички, които искат да научат основите на писането на разкази. Ще разгледаме техники за изграждане на герои, сюжет и атмосфера.</p><p><u>Какво ще научите:</u></p><ul><li>Как да изградите запомнящ се герой</li><li>Техники за развитие на сюжет</li><li>Как да създадете атмосфера в разказа</li></ul>',
           maxParticipants: 12,
           currentParticipants: 6,
           allowedRoles: ['reader'],
@@ -302,6 +341,22 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
     navigate('/dashboard');
   };
 
+  const handleViewEventDetails = (event: Event, index: number) => {
+    const calendarDate = formatDateForCalendar(event.date);
+    const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
+    const colorClass = colorVariants[index % colorVariants.length];
+    
+    setSelectedEventModal({
+      event,
+      colorClass,
+      calendarDate
+    });
+  };
+
+  const handleCloseEventModal = () => {
+    setSelectedEventModal(null);
+  };
+
   const toggleShowAllEvents = () => {
     setShowAllEvents(!showAllEvents);
   };
@@ -320,11 +375,11 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
 
   // Hero Section Data
   const heroData = {
-  title: 'Smart School Library',
-  subtitle: 'Училищна библиотека',
-  description: 'Място за знания и вдъхновение. Нашата библиотека предлага богата колекция от книги, учебни помагала и ресурси за всички ученици и учители.',
-  searchPlaceholder: 'Търсете книги, автори или теми...'
-};
+    title: 'Smart School Library',
+    subtitle: 'Училищна библиотека',
+    description: 'Място за знания и вдъхновение. Нашата библиотека предлага богата колекция от книги, учебни помагала и ресурси за всички ученици и учители.',
+    searchPlaceholder: 'Търсете книги, автори или теми...'
+  };
 
   // Features Data
   const features = [
@@ -479,14 +534,14 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
         <div className="hero-content">
           <div className="hero-blur-box">
             <h1 className="hero-title">
-  <span className="handwritten-hero">{heroData.title}</span>
-  <p></p>
-  <span className="handwritten-hero-sub">{heroData.subtitle}</span>
-</h1>
+              <span className="handwritten-hero">{heroData.title}</span>
+              <p></p>
+              <span className="handwritten-hero-sub">{heroData.subtitle}</span>
+            </h1>
 
-<p className="hero-description">
-  {heroData.description}
-</p>
+            <p className="hero-description">
+              {heroData.description}
+            </p>
 
             {/* Search Bar */}
             <div className="search-container">
@@ -517,12 +572,12 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="features-section">
         <div className="container">
           <div className="section-header">
-  <h2 className="handwritten-title">Защо да изберете нашата библиотека?</h2>
-  <p className="section-subtitle">
-    Предлагаме модерни услуги и богата колекция, които правят четенето 
-    удоволствие за всеки ученик и учител.
-  </p>
-</div>
+            <h2 className="handwritten-title">Защо да изберете нашата библиотека?</h2>
+            <p className="section-subtitle">
+              Предлагаме модерни услуги и богата колекция, които правят четенето 
+              удоволствие за всеки ученик и учител.
+            </p>
+          </div>
           <div className="features-grid">
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
@@ -545,11 +600,11 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="catalog-section">
         <div className="container">
           <div className="section-header">
-  <h2 className="handwritten-title">Препоръчани книги</h2>
-  <p className="section-subtitle">
-    Открийте най-популярните заглавия в нашата библиотека
-  </p>
-</div>
+            <h2 className="handwritten-title">Препоръчани книги</h2>
+            <p className="section-subtitle">
+              Открийте най-популярните заглавия в нашата библиотека
+            </p>
+          </div>
 
           <div className="books-grid">
             {featuredBooks.map((book) => (
@@ -601,14 +656,14 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="news-section">
         <div className="container">
           <div className="section-header">
-  <div className="section-header-top">
-    <Newspaper className="section-title-icon" />
-    <h2 className="handwritten-title">Новини и Събития</h2>
-  </div>
-  <p className="section-subtitle">
-    Най-новите актуализации и събития от библиотеката
-  </p>
-</div>
+            <div className="section-header-top">
+              <Newspaper className="section-title-icon" />
+              <h2 className="handwritten-title">Новини и Събития</h2>
+            </div>
+            <p className="section-subtitle">
+              Най-новите актуализации и събития от библиотеката
+            </p>
+          </div>
 
           <div className="news-grid">
             {displayedNews.map((newsItem, _index) => (
@@ -721,28 +776,27 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="events-section">
         <div className="container">
           <div className="section-header">
-  <div className="section-header-top">
-    <Calendar className="section-title-icon" />
-    <h2 className="handwritten-title">Предстоящи Събития</h2>
-  </div>
-  <p className="section-subtitle">
-    Присъединете се към различни дискусии и организирани културни събития.
-  </p>
-</div>
+            <div className="section-header-top">
+              <Calendar className="section-title-icon" />
+              <h2 className="handwritten-title">Предстоящи Събития</h2>
+            </div>
+            <p className="section-subtitle">
+              Присъединете се към различни дискусии и организирани културни събития.
+            </p>
+          </div>
 
           <div className="calendar-events-grid">
-  {displayedEvents.map((event, index) => {
-    const calendarDate = formatDateForCalendar(event.date);
-    const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
-    const colorClass = colorVariants[index % colorVariants.length];
-    
-    return (
-      <div key={event.id} className="calendar-event-card">
-        {/* Добавете home- клас тук */}
-        <div className={`calendar-date home-calendar-date ${colorClass}`}>
-          <div className="calendar-day home-calendar-day">{calendarDate.day}</div>
-          <div className="calendar-month home-calendar-month">{calendarDate.month}</div>
-          <div className="calendar-weekday home-calendar-weekday">{calendarDate.weekday}</div>
+            {displayedEvents.map((event, index) => {
+              const calendarDate = formatDateForCalendar(event.date);
+              const colorVariants = ['calendar-green', 'calendar-yellow', 'calendar-red', 'calendar-blue'];
+              const colorClass = colorVariants[index % colorVariants.length];
+              
+              return (
+                <div key={event.id} className="calendar-event-card">
+                  <div className={`calendar-date home-calendar-date ${colorClass}`}>
+                    <div className="calendar-day home-calendar-day">{calendarDate.day}</div>
+                    <div className="calendar-month home-calendar-month">{calendarDate.month}</div>
+                    <div className="calendar-weekday home-calendar-weekday">{calendarDate.weekday}</div>
                   </div>
 
                   <div className="calendar-event-content">
@@ -754,7 +808,23 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
                       </div>
                     </div>
 
-                    <p className="event-description-calendar">{event.description}</p>
+                    {/* Съкратено описание с бутон "Виж повече" */}
+                    <div className="event-description-container">
+                      <div 
+  className="event-description-calendar truncated-description"
+>
+  {truncateText(event.description, 150)} {/* Ограничи до 150 знака */}
+</div>
+                      <div className="view-more-container">
+                        <button 
+                          className={`view-more-btn ${colorClass}`}
+                          onClick={() => handleViewEventDetails(event, index)}
+                        >
+                          <EyeIcon className="view-more-icon" />
+                          <span>Виж повече</span>
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="event-details-calendar">
                       <div className="event-detail-row">
@@ -768,16 +838,18 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
                     </div>
 
                     <div className="event-footer-calendar">
-                      <div className="participants-info">
-                        <Users className="participants-icon" />
-                        <span className="participants-text">
-                          {event.currentParticipants} / {event.maxParticipants} записани
-                        </span>
-                        {getAvailableSpots(event) > 0 && (
-                          <span className="spots-available">
-                            {getAvailableSpots(event)} свободни места
+                      <div className="participants-section">
+                        <div className="participants-info">
+                          <Users className="participants-icon" />
+                          <span className="participants-text">
+                            {event.currentParticipants} / {event.maxParticipants} записани
                           </span>
-                        )}
+                          {getAvailableSpots(event) > 0 && (
+                            <span className="spots-available">
+                              {getAvailableSpots(event)} свободни места
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <button 
@@ -838,11 +910,11 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
-  <h2 className="handwritten-title">Какво казват нашите читатели?</h2>
-  <p className="section-subtitle">
-    Отзиви от ученици, учители и родители
-  </p>
-</div>
+            <h2 className="handwritten-title">Какво казват нашите читатели?</h2>
+            <p className="section-subtitle">
+              Отзиви от ученици, учители и родители
+            </p>
+          </div>
 
           <div className="testimonials-grid">
             {testimonials.map((testimonial, index) => (
@@ -866,11 +938,11 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
       <section className="about-section">
         <div className="container">
           <div className="section-header">
-  <h2 className="handwritten-title">За библиотеката</h2>
-  <p className="section-subtitle">
-    Нашата мисия е да осигурим среда, в която учениците да учат и да откриват нови светове чрез книгите.
-  </p>
-</div>
+            <h2 className="handwritten-title">За библиотеката</h2>
+            <p className="section-subtitle">
+              Нашата мисия е да осигурим среда, в която учениците да учат и да откриват нови светове чрез книгите.
+            </p>
+          </div>
 
           <div className="about-content">
             <div className="about-text">
@@ -880,28 +952,27 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
               
               <div className="about-description">
                 <p>
-  Основана преди 20 години, нашата библиотека се превърна в любимо място 
-  за ученици и учители. Постоянно обогатяваме колекцията си с нови заглавия 
-  и съвременни ресурси, за да отговорим на нуждите на съвременното образование.
-</p>
-<p>
-  Организираме редовни събития, литературни четения и работилници, които вдъхновяват 
-  любопитството и насърчават любовта към книгата, като същевременно подкрепят 
-  образователния процес и личностното развитие на учениците.
-</p>
-<p>
-  Вярваме, че всяка книга е врата към нов свят, и нашата мисия е да помагаме 
-  на всеки ученик да открие своя път към знанието, критическото мислене и креативността.
-</p>
-<p>
-  Това не е просто библиотека, а общност за споделяне на идеи, която 
-  активно допринася за подобряване на училищната среда.
-</p>
-<p>
-  Нашата библиотека е информационен и административен център на ПГЕЕ-гр. Пловдив, 
-  предоставящ модерни ресурси и подкрепа както за учебната, така и за извънкласната дейност.
-</p>
-
+                  Основана преди 20 години, нашата библиотека се превърна в любимо място 
+                  за ученици и учители. Постоянно обогатяваме колекцията си с нови заглавия 
+                  и съвременни ресурси, за да отговорим на нуждите на съвременното образование.
+                </p>
+                <p>
+                  Организираме редовни събития, литературни четения и работилници, които вдъхновяват 
+                  любопитството и насърчават любовта към книгата, като същевременно подкрепят 
+                  образователния процес и личностното развитие на учениците.
+                </p>
+                <p>
+                  Вярваме, че всяка книга е врата към нов свят, и нашата мисия е да помагаме 
+                  на всеки ученик да открие своя път към знанието, критическото мислене и креативността.
+                </p>
+                <p>
+                  Това не е просто библиотека, а общност за споделяне на идеи, която 
+                  активно допринася за подобряване на училищната среда.
+                </p>
+                <p>
+                  Нашата библиотека е информационен и административен център на ПГЕЕ-гр. Пловдив, 
+                  предоставящ модерни ресурси и подкрепа както за учебната, така и за извънкласната дейност.
+                </p>
               </div>
             
               <div className="about-buttons">
@@ -948,6 +1019,127 @@ console.log(formatDateForDisplay("2024-12-25")); // Пример за теств
           </div>
         </div>
       </section>
+
+      {/* Event Details Modal */}
+      {selectedEventModal && (
+        <div className="event-modal-overlay" onClick={handleCloseEventModal}>
+          <div className="event-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="event-modal-header">
+              <div className="event-modal-title">
+                <div className={`event-modal-date-badge ${selectedEventModal.colorClass}`}>
+                  <div className="event-modal-date-day">{selectedEventModal.calendarDate.day}</div>
+                  <div className="event-modal-date-month">{selectedEventModal.calendarDate.month}</div>
+                  <div className="event-modal-date-weekday">{selectedEventModal.calendarDate.weekday}</div>
+                </div>
+                <div className="event-modal-title-text">
+                  <h3>{selectedEventModal.event.title}</h3>
+                  <div className="event-modal-time">
+                    <Clock size={16} />
+                    <span>{selectedEventModal.event.time} - {selectedEventModal.event.endTime}</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                className="event-modal-close"
+                onClick={handleCloseEventModal}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="event-modal-content">
+              <div className="event-modal-details-grid">
+                <div className="event-modal-detail">
+                  <MapPin className="event-modal-detail-icon" />
+                  <div className="event-modal-detail-content">
+                    <div className="event-modal-detail-label">Място</div>
+                    <div className="event-modal-detail-value">{selectedEventModal.event.location}</div>
+                  </div>
+                </div>
+
+                <div className="event-modal-detail">
+                  <User className="event-modal-detail-icon" />
+                  <div className="event-modal-detail-content">
+                    <div className="event-modal-detail-label">Организатор</div>
+                    <div className="event-modal-detail-value">{selectedEventModal.event.organizer}</div>
+                  </div>
+                </div>
+
+                <div className="event-modal-detail">
+                  <Users className="event-modal-detail-icon" />
+                  <div className="event-modal-detail-content">
+                    <div className="event-modal-detail-label">Участници</div>
+                    <div className="event-modal-detail-value">
+                      {selectedEventModal.event.currentParticipants} / {selectedEventModal.event.maxParticipants} записани
+                      {getAvailableSpots(selectedEventModal.event) > 0 && (
+                        <span className="event-modal-available-spots">
+                          ({getAvailableSpots(selectedEventModal.event)} свободни места)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="event-modal-detail">
+                  <Calendar className="event-modal-detail-icon" />
+                  <div className="event-modal-detail-content">
+                    <div className="event-modal-detail-label">Дата</div>
+                    <div className="event-modal-detail-value">{formatFullDate(selectedEventModal.event.date)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="event-modal-description">
+                <h4 className="event-modal-description-title">Описание на събитието</h4>
+                <div 
+                  className="event-modal-description-content"
+                  dangerouslySetInnerHTML={{ __html: selectedEventModal.event.description }}
+                />
+              </div>
+
+              <div className="event-modal-requirements">
+                <h4 className="event-modal-requirements-title">
+                  <Info size={20} />
+                  <span>Изисквания и информация</span>
+                </h4>
+                <div className="event-modal-requirements-list">
+                  <div className="event-modal-requirement">
+                    <CheckCircle size={16} />
+                    <span>Подходящо за: {selectedEventModal.event.allowedRoles.join(', ')}</span>
+                  </div>
+                  <div className="event-modal-requirement">
+                    <AlertCircle size={16} />
+                    <span>Записването се извършва в библиотеката или чрез системата</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="event-modal-footer">
+                <button 
+                  className="event-modal-close-btn"
+                  onClick={handleCloseEventModal}
+                >
+                  Затвори
+                </button>
+                <button 
+                  className={`event-modal-register-btn ${selectedEventModal.colorClass} ${
+                    !user || isEventFull(selectedEventModal.event) ? 'disabled' : ''
+                  }`}
+                  disabled={!user || isEventFull(selectedEventModal.event)}
+                  onClick={() => handleEventRegistration(selectedEventModal.event)}
+                >
+                  {!user 
+                    ? 'Влезте, за да се запишете' 
+                    : isEventFull(selectedEventModal.event) 
+                      ? 'Събитието е пълно' 
+                      : 'Запиши се за събитието'
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

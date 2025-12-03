@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
-import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload } from "lucide-react";
+import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft } from "lucide-react";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 import './AdminDashboard.css';
 
 interface User {
@@ -57,23 +59,86 @@ interface ScheduleBooking {
 
 type BookingInfo = RoomBooking | ScheduleBooking;
 
+// Компонент за Toolbar на редактора
+const EditorToolbar = ({ editor }: { editor: any }) => {
+  if (!editor) return null;
+
+  return (
+    <div className="editor-toolbar">
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
+        title="Удебелен"
+      >
+        <Bold size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
+        title="Курсив"
+      >
+        <Italic size={16} />
+      </button>
+      <div className="toolbar-divider"></div>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
+        title="Заглавие 1"
+      >
+        <Heading size={16} />
+        <span>1</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
+        title="Заглавие 2"
+      >
+        <Heading size={16} />
+        <span>2</span>
+      </button>
+      <div className="toolbar-divider"></div>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
+        title="Списък с точки"
+      >
+        <List size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
+        title="Номериран списък"
+      >
+        <List size={16} />
+        <span>1.</span>
+      </button>
+      <div className="toolbar-divider"></div>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setParagraph().run()}
+        className={`toolbar-btn ${editor.isActive('paragraph') ? 'active' : ''}`}
+        title="Нормален текст"
+      >
+        <AlignLeft size={16} />
+      </button>
+    </div>
+  );
+};
+
 const AdminDashboard: React.FC = () => {
+  // Оригинални state променливи
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [roomBookings, setRoomBookings] = useState<RoomBooking[]>([]);
   const [scheduleBookings, setScheduleBookings] = useState<ScheduleBooking[]>([]);
-  const [newEventTitle, setNewEventTitle] = useState<string>("");
-  const [newEventDesc, setNewEventDesc] = useState<string>("");
-  const [newEventDate, setNewEventDate] = useState<string>("");
-  const [newEventTime, setNewEventTime] = useState<string>("");
-  const [newEventEndTime, setNewEventEndTime] = useState<string>("");
-  const [newEventLocation, setNewEventLocation] = useState<string>("");
-  const [newEventMaxParticipants, setNewEventMaxParticipants] = useState<number>(20);
-  const [newEventOrganizer, setNewEventOrganizer] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"users" | "events" | "rooms">("users");
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [editFormData, setEditFormData] = useState<Partial<Event>>({});
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [editingCell, setEditingCell] = useState<{room: string, timeSlot: string, booking: BookingInfo | null} | null>(null);
   const [addingEventFromCell, setAddingEventFromCell] = useState<{room: string, timeSlot: string} | null>(null);
@@ -91,6 +156,41 @@ const AdminDashboard: React.FC = () => {
   const [cellEventEndTime, setCellEventEndTime] = useState<string>("");
   const [cellEventMaxParticipants, setCellEventMaxParticipants] = useState<number>(20);
   const [cellEventOrganizer, setCellEventOrganizer] = useState<string>("");
+
+  // Нови state за модали
+  const [showEventModal, setShowEventModal] = useState<boolean>(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [modalEventData, setModalEventData] = useState<Partial<Event>>({
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    endTime: "",
+    location: "",
+    maxParticipants: 20,
+    organizer: "",
+    allowedRoles: ["reader", "librarian"]
+  });
+
+  // TipTap редактор
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: modalEventData.description || "",
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setModalEventData(prev => ({
+        ...prev,
+        description: html
+      }));
+    },
+  });
+
+  // Обновяване на редактора при промяна на modalEventData
+  useEffect(() => {
+    if (editor && modalEventData.description !== editor.getHTML()) {
+      editor.commands.setContent(modalEventData.description || "");
+    }
+  }, [modalEventData.description, editor]);
 
   const locationOptions = [
     "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
@@ -119,6 +219,7 @@ const AdminDashboard: React.FC = () => {
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
+  // Оригинални функции
   const validateTime = (time: string): boolean => {
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
@@ -129,13 +230,11 @@ const AdminDashboard: React.FC = () => {
     return endTime > startTime;
   };
 
-  // Хелпер функция за конвертиране на време в минути
   const convertToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + (minutes || 0);
   };
 
-  // Функция за проверка за припокриване на интервали
   const hasTimeOverlap = (
     slotStart: string, 
     slotEnd: string, 
@@ -147,12 +246,9 @@ const AdminDashboard: React.FC = () => {
     const eventStartMin = convertToMinutes(eventStart);
     const eventEndMin = convertToMinutes(eventEnd);
     
-    // Припокриване се случва когато:
-    // 1. Събитието започва преди края на слота И завършва след началото на слота
     return eventStartMin < slotEndMin && eventEndMin > slotStartMin;
   };
 
-  // Проверка за конфликт с всички резервации (събития + график)
   const hasBookingConflict = (
     room: string, 
     date: string, 
@@ -160,7 +256,6 @@ const AdminDashboard: React.FC = () => {
     endTime: string, 
     excludeEventId?: string
   ): boolean => {
-    // Проверка за конфликт с резервации за събития
     const eventConflict = roomBookings.some(booking => {
       if (excludeEventId && booking.id === excludeEventId) return false;
       
@@ -180,7 +275,6 @@ const AdminDashboard: React.FC = () => {
     
     if (eventConflict) return true;
     
-    // Проверка за конфликт с графични занятия
     const dayOfWeek = new Date(date).getDay();
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       const scheduleConflicts = scheduleBookings.filter(
@@ -206,26 +300,6 @@ const AdminDashboard: React.FC = () => {
     return false;
   };
 
-  const getTimeSlotsInRange = (startTime: string, endTime: string): string[] => {
-    const slots: string[] = [];
-    
-    // Конвертираме в минути от началото на деня
-    const startMinutes = convertToMinutes(startTime);
-    const endMinutes = convertToMinutes(endTime);
-    
-    // Взимаме началния час (без минути)
-    const startHour = Math.floor(startMinutes / 60);
-    const endHour = Math.ceil(endMinutes / 60);
-    
-    // Генерираме часове между началния и крайния час
-    for (let hour = startHour; hour < endHour; hour++) {
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      slots.push(timeString);
-    }
-    
-    return slots;
-  };
-console.log(getTimeSlotsInRange);
   const parseScheduleText = (text: string): { dayOfWeek: number, period: number, startTime: string, endTime: string, classSchedules: ClassSchedule[] }[] => {
     const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
     const dayMap: { [key: string]: number } = {
@@ -371,21 +445,17 @@ console.log(getTimeSlotsInRange);
     }
   };
 
-  // Проверка дали стаята е заета от събитие за конкретен час
   const isRoomBookedByEvent = (room: string, date: string, timeSlotHour: string): boolean => {
-    // timeSlotHour е "13" за 13:00-14:00
     const slotStart = timeSlotHour + ':00';
     const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
     
     return roomBookings.some(booking => {
       if (booking.room !== room || booking.date !== date) return false;
       
-      // Проверяваме за припокриване на интервали
       return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
     });
   };
 
-  // Вземане на информация за събитие
   const getEventInfo = (room: string, date: string, timeSlotHour: string): RoomBooking | null => {
     const slotStart = timeSlotHour + ':00';
     const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
@@ -399,7 +469,6 @@ console.log(getTimeSlotsInRange);
     return booking || null;
   };
 
-  // Проверка дали стаята е заета в графика за конкретен час
   const isRoomBookedInSchedule = (room: string, date: string, timeSlotHour: string): boolean => {
     const dayOfWeek = new Date(date).getDay();
     if (dayOfWeek < 1 || dayOfWeek > 5) return false;
@@ -415,7 +484,6 @@ console.log(getTimeSlotsInRange);
     );
   };
 
-  // Вземане на информация за графично занятие
   const getScheduleInfo = (room: string, date: string, timeSlotHour: string): ScheduleBooking | null => {
     const dayOfWeek = new Date(date).getDay();
     if (dayOfWeek < 1 || dayOfWeek > 5) return null;
@@ -433,21 +501,12 @@ console.log(getTimeSlotsInRange);
     return schedule || null;
   };
 
-  // Проверка дали стаята е заета (събития + график)
-  const isRoomBooked = (room: string, date: string, timeSlotHour: string): boolean => {
-    return isRoomBookedByEvent(room, date, timeSlotHour) || 
-           isRoomBookedInSchedule(room, date, timeSlotHour);
-  };
-console.log(isRoomBooked);
-  // Вземане на информация за резервацията (събитие или график)
   const getBookingInfo = (room: string, date: string, timeSlotHour: string): BookingInfo | null => {
-    // Първо проверяваме за събития
     const eventInfo = getEventInfo(room, date, timeSlotHour);
     if (eventInfo) {
       return eventInfo;
     }
     
-    // След това проверяваме за график
     const scheduleInfo = getScheduleInfo(room, date, timeSlotHour);
     if (scheduleInfo) {
       return scheduleInfo;
@@ -523,54 +582,25 @@ console.log(isRoomBooked);
     fetchUsers();
   };
 
-  const createEvent = async () => {
-    if (!newEventTitle.trim() || !newEventDate || !newEventTime || !newEventEndTime || !newEventLocation) return;
-    
-    if (!validateTime(newEventTime) || !validateTime(newEventEndTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
-
-    if (!validateTimeRange(newEventTime, newEventEndTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-    
-    if (hasBookingConflict(newEventLocation, newEventDate, newEventTime, newEventEndTime)) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-    
-    const eventData = {
-      title: newEventTitle,
-      description: newEventDesc,
-      date: newEventDate,
-      time: newEventTime,
-      endTime: newEventEndTime,
-      location: newEventLocation,
-      maxParticipants: newEventMaxParticipants,
-      currentParticipants: 0,
-      allowedRoles: ["reader", "librarian"],
-      organizer: newEventOrganizer,
-      createdAt: new Date(),
-      registrations: []
-    };
-
-    await addDoc(collection(db, "events"), eventData);
-    
-    setNewEventTitle("");
-    setNewEventDesc("");
-    setNewEventDate("");
-    setNewEventTime("");
-    setNewEventEndTime("");
-    setNewEventLocation("");
-    setNewEventMaxParticipants(20);
-    setNewEventOrganizer("");
-    
+  const deleteEvent = async (eventId: string) => {
+    if (!window.confirm("Сигурни ли сте, че искате да изтриете събитието?")) return;
+    await deleteDoc(doc(db, "events", eventId));
     fetchEvents();
   };
 
-  // Създаване на събитие от клетка
+  const startAddingEventFromCell = (room: string, timeSlot: string) => {
+    const [slotStart] = timeSlot.split('-');
+    const startHour = parseInt(slotStart);
+    
+    setCellEventStartTime(`${slotStart}:00`);
+    setCellEventEndTime(`${(startHour + 1).toString().padStart(2, '0')}:00`);
+    
+    setAddingEventFromCell({
+      room,
+      timeSlot
+    });
+  };
+
   const createEventFromCell = async () => {
     if (!addingEventFromCell || !cellEventTitle.trim() || !selectedDate || !cellEventStartTime || !cellEventEndTime) return;
     
@@ -606,7 +636,6 @@ console.log(isRoomBooked);
 
     await addDoc(collection(db, "events"), eventData);
     
-    // Reset form
     setCellEventTitle("");
     setCellEventDesc("");
     setCellEventStartTime("");
@@ -618,23 +647,14 @@ console.log(isRoomBooked);
     fetchEvents();
   };
 
-  const deleteEvent = async (eventId: string) => {
-    if (!window.confirm("Сигурни ли сте, че искате да изтриете събитието?")) return;
-    await deleteDoc(doc(db, "events", eventId));
-    fetchEvents();
-  };
-
-  // Функция за изтриване на резервация от клетка
   const deleteBookingFromCell = async (booking: BookingInfo) => {
     if (!window.confirm("Сигурни ли сте, че искате да изтриете тази резервация?")) return;
     
     try {
       if (booking.type === 'event') {
-        // Изтриване на събитие
         await deleteDoc(doc(db, "events", booking.eventId));
         fetchEvents();
       } else if (booking.type === 'schedule') {
-        // Изтриване на графично занятие
         await deleteDoc(doc(db, "scheduleBookings", booking.id));
         fetchScheduleBookings();
       }
@@ -647,27 +667,10 @@ console.log(isRoomBooked);
     }
   };
 
-  // Функция за стартиране на добавяне на събитие от клетка
-  const startAddingEventFromCell = (room: string, timeSlot: string) => {
-    const [slotStart] = timeSlot.split('-');
-    const startHour = parseInt(slotStart);
-    
-    // Автоматично попълване на начален и краен час
-    setCellEventStartTime(`${slotStart}:00`);
-    setCellEventEndTime(`${(startHour + 1).toString().padStart(2, '0')}:00`);
-    
-    setAddingEventFromCell({
-      room,
-      timeSlot
-    });
-  };
-
-  // Функция за редактиране на резервация в клетка
   const startEditingCell = (room: string, timeSlot: string) => {
     const [slotStart] = timeSlot.split('-');
     const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
     
-    // Ако има резервация, показваме редактора
     if (bookingInfo) {
       setEditingCell({
         room,
@@ -675,7 +678,6 @@ console.log(isRoomBooked);
         booking: bookingInfo
       });
     } else {
-      // Ако няма резервация, предлагаме да добавим нова
       startAddingEventFromCell(room, timeSlot);
     }
   };
@@ -694,7 +696,7 @@ console.log(isRoomBooked);
     });
     fetchEvents();
   };
-
+console.log(toggleEventRole);
   const updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
     if (maxParticipants < 1) return;
     const event = events.find(e => e.id === eventId);
@@ -704,17 +706,35 @@ console.log(isRoomBooked);
       alert("Не можете да зададете по-малко места от текущо записаните участници!");
       return;
     }
-console.log(updateMaxParticipants);
+
     await updateDoc(doc(db, "events", eventId), { 
       maxParticipants: maxParticipants,
       updatedAt: new Date()
     });
     fetchEvents();
   };
+console.log(updateMaxParticipants);
+  // Функции за управление на модала
+  const openCreateEventModal = () => {
+    setModalMode('create');
+    setModalEventData({
+      title: "",
+      description: "",
+      date: "",
+      time: "",
+      endTime: "",
+      location: "",
+      maxParticipants: 20,
+      organizer: "",
+      allowedRoles: ["reader", "librarian"]
+    });
+    setShowEventModal(true);
+  };
 
-  const startEditing = (event: Event) => {
-    setEditingEvent(event);
-    setEditFormData({
+  const openEditEventModal = (event: Event) => {
+    setModalMode('edit');
+    setModalEventData({
+      id: event.id,
       title: event.title,
       description: event.description,
       date: event.date,
@@ -722,65 +742,138 @@ console.log(updateMaxParticipants);
       endTime: event.endTime,
       location: event.location,
       maxParticipants: event.maxParticipants,
-      organizer: event.organizer
+      organizer: event.organizer,
+      allowedRoles: event.allowedRoles,
+      currentParticipants: event.currentParticipants
     });
+    setShowEventModal(true);
   };
 
-  const cancelEditing = () => {
-    setEditingEvent(null);
-    setEditFormData({});
+  const closeEventModal = () => {
+    setShowEventModal(false);
+    setModalEventData({});
   };
 
-  const saveEvent = async () => {
-    if (!editingEvent || !editFormData.title?.trim() || !editFormData.date || 
-        !editFormData.time || !editFormData.endTime || !editFormData.location) return;
+  const handleModalInputChange = (field: keyof Event, value: any) => {
+    setModalEventData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCreateEvent = async () => {
+    if (!modalEventData.title?.trim() || !modalEventData.date || 
+        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
+      alert("Моля, попълнете всички задължителни полета!");
+      return;
+    }
     
-    if (!validateTime(editFormData.time) || !validateTime(editFormData.endTime)) {
+    if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
       alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
       return;
     }
 
-    if (!validateTimeRange(editFormData.time, editFormData.endTime)) {
+    if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
+      alert("Крайният час трябва да е след началния час!");
+      return;
+    }
+    
+    if (hasBookingConflict(
+      modalEventData.location, 
+      modalEventData.date, 
+      modalEventData.time, 
+      modalEventData.endTime
+    )) {
+      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
+      return;
+    }
+    
+    try {
+      const eventData = {
+        title: modalEventData.title,
+        description: modalEventData.description || "",
+        date: modalEventData.date,
+        time: modalEventData.time,
+        endTime: modalEventData.endTime,
+        location: modalEventData.location,
+        maxParticipants: modalEventData.maxParticipants || 20,
+        currentParticipants: 0,
+        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
+        organizer: modalEventData.organizer || "",
+        createdAt: new Date(),
+        registrations: []
+      };
+
+      await addDoc(collection(db, "events"), eventData);
+      
+      closeEventModal();
+      fetchEvents();
+      alert("Събитието е създадено успешно!");
+      
+    } catch (error) {
+      console.error("Грешка при създаване на събитие:", error);
+      alert("Грешка при създаване на събитие!");
+    }
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!modalEventData.id) return;
+    
+    if (!modalEventData.title?.trim() || !modalEventData.date || 
+        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
+      alert("Моля, попълнете всички задължителни полета!");
+      return;
+    }
+    
+    if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
+      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
+      return;
+    }
+
+    if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
       alert("Крайният час трябва да е след началния час!");
       return;
     }
 
-    if (editFormData.maxParticipants && editFormData.maxParticipants < editingEvent.currentParticipants) {
+    if (modalEventData.maxParticipants && modalEventData.currentParticipants && 
+        modalEventData.maxParticipants < modalEventData.currentParticipants) {
       alert("Не можете да зададете по-малко места от текущо записаните участници!");
       return;
     }
 
     if (hasBookingConflict(
-      editFormData.location, 
-      editFormData.date, 
-      editFormData.time, 
-      editFormData.endTime, 
-      editingEvent.id
+      modalEventData.location, 
+      modalEventData.date, 
+      modalEventData.time, 
+      modalEventData.endTime, 
+      modalEventData.id
     )) {
       alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
       return;
     }
 
     try {
-      await updateDoc(doc(db, "events", editingEvent.id), {
-        ...editFormData,
+      await updateDoc(doc(db, "events", modalEventData.id), {
+        title: modalEventData.title,
+        description: modalEventData.description || "",
+        date: modalEventData.date,
+        time: modalEventData.time,
+        endTime: modalEventData.endTime,
+        location: modalEventData.location,
+        maxParticipants: modalEventData.maxParticipants || 20,
+        organizer: modalEventData.organizer || "",
+        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
         updatedAt: new Date()
       });
       
-      setEditingEvent(null);
-      setEditFormData({});
+      closeEventModal();
       fetchEvents();
+      alert("Събитието е обновено успешно!");
+      
     } catch (error) {
-      console.error("Error updating event:", error);
-      alert("Грешка при обновяване на събитието");
+      console.error("Грешка при обновяване на събитие:", error);
+      alert("Грешка при обновяване на събитие!");
     }
-  };
-
-  const handleEditFormChange = (field: keyof Event, value: any) => {
-    setEditFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   const filteredUsers = users.filter(user =>
@@ -803,11 +896,6 @@ console.log(updateMaxParticipants);
     return event.currentParticipants >= event.maxParticipants;
   };
 
-  const getLocationConflictStatus = (location: string, date: string, time: string, endTime: string, excludeEventId?: string) => {
-    if (!date || !time || !endTime) return false;
-    return hasBookingConflict(location, date, time, endTime, excludeEventId);
-  };
-console.log(getLocationConflictStatus);
   return (
     <div className="admin-dashboard">
       <div className="dashboard-container">
@@ -852,6 +940,246 @@ console.log(getLocationConflictStatus);
             Стаи ({locationOptions.length})
           </button>
         </div>
+
+        {/* Модал за създаване/редактиране на събитие */}
+        {showEventModal && (
+          <div className="modal-overlay">
+            <div className="modal-content large-modal">
+              <div className="modal-header">
+                <h3>
+                  {modalMode === 'create' ? 'Създаване на ново събитие' : 'Редактиране на събитие'}
+                </h3>
+                <button 
+                  onClick={closeEventModal}
+                  className="close-btn"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="modal-body event-modal-body">
+                <div className="event-modal-grid">
+                  <div className="modal-form-group">
+                    <label className="required">Заглавие на събитието</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. Среща с писател"
+                      value={modalEventData.title || ""}
+                      onChange={(e) => handleModalInputChange('title', e.target.value)}
+                      className="modal-form-input"
+                    />
+                  </div>
+                  
+                  <div className="modal-form-group">
+                    <label>Описание (поддържа форматиране)</label>
+                    <div className="editor-container">
+                      <EditorToolbar editor={editor} />
+                      <div className="editor-content">
+                        <EditorContent editor={editor} />
+                      </div>
+                      <div className="formatting-tips">
+                        <Type size={14} />
+                        <span>Можете да форматирате текста: <strong>удебеляване</strong>, <em>курсив</em>, заглавия и списъци.</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="modal-form-group">
+                    <label className="required">Дата</label>
+                    <input
+                      type="date"
+                      value={modalEventData.date || ""}
+                      onChange={(e) => handleModalInputChange('date', e.target.value)}
+                      className="modal-form-input"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  
+                  <div className="time-range-group">
+                    <div className="modal-form-group">
+                      <label className="required">Начален час</label>
+                      <select
+                        value={modalEventData.time || ""}
+                        onChange={(e) => handleModalInputChange('time', e.target.value)}
+                        className="modal-form-input"
+                      >
+                        <option value="">Изберете начален час</option>
+                        {timeOptionsWithMinutes.map(time => (
+                          <option key={time} value={time}>{time}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="modal-form-group">
+                      <label className="required">Краен час</label>
+                      <select
+                        value={modalEventData.endTime || ""}
+                        onChange={(e) => handleModalInputChange('endTime', e.target.value)}
+                        className="modal-form-input"
+                      >
+                        <option value="">Изберете краен час</option>
+                        {timeOptionsWithMinutes.map(time => (
+                          <option key={time} value={time}>{time}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {modalEventData.time && modalEventData.endTime && 
+                   !validateTimeRange(modalEventData.time, modalEventData.endTime) && (
+                    <div className="validation-error">
+                      Крайният час трябва да е след началния час!
+                    </div>
+                  )}
+                  
+                  <div className="modal-form-group">
+                    <label className="required">Място</label>
+                    <select
+                      value={modalEventData.location || ""}
+                      onChange={(e) => handleModalInputChange('location', e.target.value)}
+                      className={`modal-form-input ${
+                        modalEventData.location && modalEventData.date && 
+                        modalEventData.time && modalEventData.endTime && 
+                        hasBookingConflict(
+                          modalEventData.location, 
+                          modalEventData.date, 
+                          modalEventData.time, 
+                          modalEventData.endTime,
+                          modalEventData.id
+                        ) 
+                          ? 'booking-conflict' 
+                          : ''
+                      }`}
+                    >
+                      <option value="">Изберете място</option>
+                      {locationOptions.map(location => {
+                        const hasConflict = modalEventData.date && modalEventData.time && modalEventData.endTime && 
+                          hasBookingConflict(
+                            location, 
+                            modalEventData.date, 
+                            modalEventData.time, 
+                            modalEventData.endTime,
+                            modalEventData.id
+                          );
+                        
+                        return (
+                          <option 
+                            key={location} 
+                            value={location}
+                            disabled={hasConflict || false}
+                            className={hasConflict ? 'conflict-option' : ''}
+                          >
+                            {location} {hasConflict ? '(Заето)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    
+                    {modalEventData.location && modalEventData.date && 
+                     modalEventData.time && modalEventData.endTime && 
+                     hasBookingConflict(
+                       modalEventData.location, 
+                       modalEventData.date, 
+                       modalEventData.time, 
+                       modalEventData.endTime,
+                       modalEventData.id
+                     ) && (
+                      <div className="validation-error">
+                        Стаята е вече резервирана за избрания интервал!
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="modal-form-group">
+                    <label>Брой места</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={modalEventData.maxParticipants || 20}
+                      onChange={(e) => handleModalInputChange('maxParticipants', parseInt(e.target.value) || 20)}
+                      className="modal-form-input"
+                    />
+                    {modalMode === 'edit' && modalEventData.currentParticipants && (
+                      <small className="help-text">
+                        Текущо записани: {modalEventData.currentParticipants} участника
+                      </small>
+                    )}
+                  </div>
+                  
+                  <div className="modal-form-group">
+                    <label>Организатор</label>
+                    <input
+                      type="text"
+                      placeholder="Име на организатора"
+                      value={modalEventData.organizer || ""}
+                      onChange={(e) => handleModalInputChange('organizer', e.target.value)}
+                      className="modal-form-input"
+                    />
+                  </div>
+                  
+                  <div className="modal-form-group">
+                    <label>Разрешени роли</label>
+                    <div className="roles-checkbox-group">
+                      {["reader", "librarian", "admin"].map(role => (
+                        <label key={role} className="role-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={(modalEventData.allowedRoles || []).includes(role)}
+                            onChange={(e) => {
+                              const currentRoles = modalEventData.allowedRoles || [];
+                              const newRoles = e.target.checked
+                                ? [...currentRoles, role]
+                                : currentRoles.filter(r => r !== role);
+                              handleModalInputChange('allowedRoles', newRoles);
+                            }}
+                            className="role-checkbox-input"
+                          />
+                          <span className={`role-badge role-${role}`}>
+                            {role === 'reader' ? 'Читатели' : 
+                             role === 'librarian' ? 'Библиотекари' : 'Администратори'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-actions">
+                  <button 
+                    onClick={modalMode === 'create' ? handleCreateEvent : handleUpdateEvent}
+                    disabled={
+                      !modalEventData.title?.trim() || 
+                      !modalEventData.date || 
+                      !modalEventData.time || 
+                      !modalEventData.endTime || 
+                      !modalEventData.location || 
+                      !validateTimeRange(modalEventData.time, modalEventData.endTime) ||
+                      hasBookingConflict(
+                        modalEventData.location, 
+                        modalEventData.date, 
+                        modalEventData.time, 
+                        modalEventData.endTime,
+                        modalEventData.id
+                      )
+                    }
+                    className="primary-btn modal-save-btn"
+                  >
+                    <Save size={16} />
+                    {modalMode === 'create' ? 'Създай Събитие' : 'Запази Промените'}
+                  </button>
+                  
+                  <button 
+                    onClick={closeEventModal}
+                    className="secondary-btn"
+                  >
+                    Отказ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === "users" && (
           <div className="content-section">
@@ -905,154 +1233,17 @@ console.log(getLocationConflictStatus);
 
         {activeTab === "events" && (
           <div className="content-section">
-            <h2>Управление на Събития</h2>
-            
-            <div className="create-event-card">
-              <div className="card-header">
-                <h3>Създай Ново Събитие</h3>
-              </div>
-              <div className="card-body">
-                <div className="event-form-grid">
-                  <div className="form-group">
-                    <label>Заглавие на събитието *</label>
-                    <input
-                      type="text"
-                      placeholder="Напр. Среща с писател"
-                      value={newEventTitle}
-                      onChange={(e) => setNewEventTitle(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Описание</label>
-                    <textarea
-                      placeholder="Кратко описание на събитието"
-                      value={newEventDesc}
-                      onChange={(e) => setNewEventDesc(e.target.value)}
-                      className="form-input textarea"
-                      rows={5}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Дата *</label>
-                    <input
-                      type="date"
-                      value={newEventDate}
-                      onChange={(e) => setNewEventDate(e.target.value)}
-                      className="form-input"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Начален час *</label>
-                    <select
-                      value={newEventTime}
-                      onChange={(e) => setNewEventTime(e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Изберете начален час</option>
-                      {timeOptionsWithMinutes.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Краен час *</label>
-                    <select
-                      value={newEventEndTime}
-                      onChange={(e) => setNewEventEndTime(e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Изберете краен час</option>
-                      {timeOptionsWithMinutes.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                    {newEventTime && newEventEndTime && !validateTimeRange(newEventTime, newEventEndTime) && (
-                      <div className="validation-error">
-                        Крайният час трябва да е след началния!
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Място *</label>
-                    <select
-                      value={newEventLocation}
-                      onChange={(e) => setNewEventLocation(e.target.value)}
-                      className={`form-input ${
-                        newEventLocation && newEventDate && newEventTime && newEventEndTime && 
-                        hasBookingConflict(newEventLocation, newEventDate, newEventTime, newEventEndTime) 
-                          ? 'booking-conflict' 
-                          : ''
-                      }`}
-                    >
-                      <option value="">Изберете място</option>
-                      {locationOptions.map(location => {
-                        const hasConflict = newEventDate && newEventTime && newEventEndTime && 
-                          hasBookingConflict(location, newEventDate, newEventTime, newEventEndTime);
-                        
-                        return (
-                          <option 
-                            key={location} 
-                            value={location}
-                            disabled={hasConflict || false}
-                            style={{ color: hasConflict ? '#ccc' : '#000' }}
-                          >
-                            {location} {hasConflict ? '(Заето)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    {newEventLocation && newEventDate && newEventTime && newEventEndTime && 
-                      hasBookingConflict(newEventLocation, newEventDate, newEventTime, newEventEndTime) && (
-                      <div className="validation-error">
-                        Стаята е вече резервирана за избрания интервал!
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Брой места</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="1000"
-                      value={newEventMaxParticipants}
-                      onChange={(e) => setNewEventMaxParticipants(parseInt(e.target.value) || 1)}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Организатор</label>
-                    <input
-                      type="text"
-                      placeholder="Име на организатора"
-                      value={newEventOrganizer}
-                      onChange={(e) => setNewEventOrganizer(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group full-width">
-                    <button
-                      onClick={createEvent}
-                      disabled={
-                        !newEventTitle.trim() || 
-                        !newEventDate || 
-                        !newEventTime || 
-                        !newEventEndTime || 
-                        !newEventLocation || 
-                        !validateTimeRange(newEventTime, newEventEndTime) ||
-                        hasBookingConflict(newEventLocation, newEventDate, newEventTime, newEventEndTime)
-                      }
-                      className="create-btn primary-btn"
-                    >
-                      <Plus size={16} />
-                      Създай Събитие
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="events-header">
+              <h2>Управление на Събития</h2>
+              <button 
+                onClick={openCreateEventModal}
+                className="create-event-btn primary-btn"
+              >
+                <Plus size={16} />
+                Създай Ново Събитие
+              </button>
             </div>
-
+            
             <div className="events-list-section">
               <h3>Всички Събития</h3>
               <div className="table-container">
@@ -1064,7 +1255,6 @@ console.log(getLocationConflictStatus);
                       <th>Място</th>
                       <th>Организатор</th>
                       <th>Участници</th>
-                      <th>Разрешени Роли</th>
                       <th>Действия</th>
                     </tr>
                   </thead>
@@ -1072,167 +1262,44 @@ console.log(getLocationConflictStatus);
                     {filteredEvents.map(event => (
                       <tr key={event.id} className={isEventFull(event) ? 'event-full' : ''}>
                         <td className="event-info-cell">
-                          {editingEvent?.id === event.id ? (
-                            <div className="edit-form">
-                              <input
-                                type="text"
-                                value={editFormData.title || ''}
-                                onChange={(e) => handleEditFormChange('title', e.target.value)}
-                                className="edit-input"
-                                placeholder="Заглавие"
+                          <div className="event-title-section">
+                            <div className="event-title">{event.title}</div>
+                            {event.description && (
+                              <div 
+                                className="event-desc-html"
+                                dangerouslySetInnerHTML={{ __html: event.description }}
                               />
-                              <textarea
-                                value={editFormData.description || ''}
-                                onChange={(e) => handleEditFormChange('description', e.target.value)}
-                                className="edit-input textarea"
-                                placeholder="Описание"
-                                rows={4}
-                              />
-                            </div>
-                          ) : (
-                            <div className="event-title-section">
-                              <div className="event-title">{event.title}</div>
-                              <div className="event-desc">{event.description}</div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </td>
                         <td className="event-time-cell">
-                          {editingEvent?.id === event.id ? (
-                            <div className="edit-form">
-                              <input
-                                type="date"
-                                value={editFormData.date || ''}
-                                onChange={(e) => handleEditFormChange('date', e.target.value)}
-                                className="edit-input"
-                                min={new Date().toISOString().split('T')[0]}
-                              />
-                              <div className="time-range-edit">
-                                <select
-                                  value={editFormData.time || ''}
-                                  onChange={(e) => handleEditFormChange('time', e.target.value)}
-                                  className="edit-input"
-                                >
-                                  <option value="">Начален час</option>
-                                  {timeOptionsWithMinutes.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                                <span>до</span>
-                                <select
-                                  value={editFormData.endTime || ''}
-                                  onChange={(e) => handleEditFormChange('endTime', e.target.value)}
-                                  className="edit-input"
-                                >
-                                  <option value="">Краен час</option>
-                                  {timeOptionsWithMinutes.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              {editFormData.time && editFormData.endTime && !validateTimeRange(editFormData.time, editFormData.endTime) && (
-                                <div className="validation-error-small">
-                                  Невалиден времеви диапазон
-                                </div>
-                              )}
+                          <div className="event-time-display">
+                            <div className="event-date">
+                              <Calendar size={14} />
+                              {new Date(event.date).toLocaleDateString('bg-BG')}
                             </div>
-                          ) : (
-                            <div className="event-time-display">
-                              <div className="event-date">
-                                <Calendar size={14} />
-                                {new Date(event.date).toLocaleDateString('bg-BG')}
-                              </div>
-                              <div className="event-time-range">
-                                <Clock size={14} />
-                                {event.time} - {event.endTime}
-                              </div>
+                            <div className="event-time-range">
+                              <Clock size={14} />
+                              {event.time} - {event.endTime}
                             </div>
-                          )}
+                          </div>
                         </td>
                         <td>
-                          {editingEvent?.id === event.id ? (
-                            <select
-                              value={editFormData.location || ''}
-                              onChange={(e) => handleEditFormChange('location', e.target.value)}
-                              className={`edit-input ${
-                                editFormData.location && editFormData.date && editFormData.time && editFormData.endTime && 
-                                hasBookingConflict(
-                                  editFormData.location, 
-                                  editFormData.date, 
-                                  editFormData.time, 
-                                  editFormData.endTime, 
-                                  event.id
-                                ) 
-                                  ? 'booking-conflict' 
-                                  : ''
-                              }`}
-                            >
-                              <option value="">Изберете място</option>
-                              {locationOptions.map(location => {
-                                const hasConflict = editFormData.date && editFormData.time && editFormData.endTime && 
-                                  hasBookingConflict(location, editFormData.date, editFormData.time, editFormData.endTime, event.id);
-                                
-                                return (
-                                  <option 
-                                    key={location} 
-                                    value={location}
-                                    disabled={hasConflict || false}
-                                    style={{ color: hasConflict ? '#ccc' : '#000' }}
-                                  >
-                                    {location} {hasConflict ? '(Заето)' : ''}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          ) : (
-                            <div className="event-location">
-                              <MapPin size={14} />
-                              {event.location}
-                            </div>
-                          )}
-                          {editingEvent?.id === event.id && editFormData.location && editFormData.date && editFormData.time && editFormData.endTime && 
-                            hasBookingConflict(
-                              editFormData.location, 
-                              editFormData.date, 
-                              editFormData.time, 
-                              editFormData.endTime, 
-                              event.id
-                            ) && (
-                            <div className="validation-error-small">
-                              Стаята е заета за този интервал!
-                            </div>
-                          )}
+                          <div className="event-location">
+                            <MapPin size={14} />
+                            {event.location}
+                          </div>
                         </td>
                         <td>
-                          {editingEvent?.id === event.id ? (
-                            <input
-                              type="text"
-                              value={editFormData.organizer || ''}
-                              onChange={(e) => handleEditFormChange('organizer', e.target.value)}
-                              className="edit-input"
-                              placeholder="Организатор"
-                            />
-                          ) : (
-                            <div className="event-organizer">
-                              {event.organizer || "Не е посочен"}
-                            </div>
-                          )}
+                          <div className="event-organizer">
+                            {event.organizer || "Не е посочен"}
+                          </div>
                         </td>
                         <td>
                           <div className="participants-info">
                             <div className="participants-count">
                               <User size={14} />
-                              {event.currentParticipants} / {editingEvent?.id === event.id ? (
-                                <input
-                                  type="number"
-                                  min={event.currentParticipants}
-                                  max="1000"
-                                  value={editFormData.maxParticipants || event.maxParticipants}
-                                  onChange={(e) => handleEditFormChange('maxParticipants', parseInt(e.target.value) || event.currentParticipants)}
-                                  className="participant-input"
-                                />
-                              ) : (
-                                event.maxParticipants
-                              )}
+                              {event.currentParticipants} / {event.maxParticipants}
                             </div>
                             <div className="available-spots">
                               Свободни: {getAvailableSpots(event)}
@@ -1243,74 +1310,21 @@ console.log(getLocationConflictStatus);
                           </div>
                         </td>
                         <td>
-                          <div className="roles-container">
-                            {["reader", "librarian", "admin"].map(role => (
-                              <label key={role} className="role-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={event.allowedRoles.includes(role)}
-                                  onChange={() => toggleEventRole(event.id, role)}
-                                  disabled={editingEvent?.id === event.id}
-                                />
-                                <span className={`role-tag role-${role}`}>
-                                  {role === 'reader' ? 'Читател' : role === 'librarian' ? 'Библиотекар' : 'Админ'}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </td>
-                        <td>
                           <div className="action-buttons">
-                            {editingEvent?.id === event.id ? (
-                              <>
-                                <button
-                                  onClick={saveEvent}
-                                  className="save-btn"
-                                  title="Запази промените"
-                                  disabled={
-                                    !editFormData.title?.trim() || 
-                                    !editFormData.date || 
-                                    !editFormData.time || 
-                                    !editFormData.endTime || 
-                                    !editFormData.location || 
-                                    !validateTimeRange(editFormData.time, editFormData.endTime) ||
-                                    hasBookingConflict(
-                                      editFormData.location, 
-                                      editFormData.date, 
-                                      editFormData.time, 
-                                      editFormData.endTime, 
-                                      event.id
-                                    )
-                                  }
-                                >
-                                  <Save size={16} />
-                                </button>
-                                <button
-                                  onClick={cancelEditing}
-                                  className="cancel-btn"
-                                  title="Откажи промените"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => startEditing(event)}
-                                  className="edit-btn"
-                                  title="Редактирай събитие"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => deleteEvent(event.id)}
-                                  className="delete-btn"
-                                  title="Изтрий събитие"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
+                            <button
+                              onClick={() => openEditEventModal(event)}
+                              className="edit-btn"
+                              title="Редактирай събитие"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteEvent(event.id)}
+                              className="delete-btn"
+                              title="Изтрий събитие"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>
