@@ -1050,3 +1050,39 @@
     padding: 0.45rem !important;
   }
 }
+
+/* ============================================
+   FIX: Mobile menu scroll + section spacing
+   ============================================ */
+
+@media (max-width: 768px) {
+
+  /* Правим мобилното меню скролируемо */
+  .mobile-menu {
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    padding-bottom: 2rem !important; /* за да се виждат auth бутоните */
+  }
+
+  /* Правим QUICK LINKS по-компактни */
+  .mobile-quick-links {
+    margin-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .mobile-quick-link {
+    padding: 0.6rem 0 !important;
+  }
+
+  /* AUTH SECTION да не се притиска */
+  .mobile-auth-section {
+    margin-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Регистрация бутонът да е винаги видим */
+  .mobile-auth-buttons {
+    padding-bottom: 2rem !important;
+  }
+}
+
