@@ -4120,3 +4120,113 @@
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-light);
 }
+/* Стилове за секцията "За библиотеката" за тъмна тема */
+.dark-theme-compatible .about-section {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+/* Ако използвате системни променливи за цветове */
+.dark-theme-compatible .about-section .section-header {
+  color: var(--text-primary);
+}
+
+.dark-theme-compatible .about-section .section-subtitle {
+  color: var(--text-secondary);
+}
+
+.dark-theme-compatible .about-section .about-subtitle {
+  color: var(--text-primary);
+}
+
+.dark-theme-compatible .about-section .about-description p {
+  color: var(--text-primary);
+}
+
+.dark-theme-compatible .about-section .stat-number {
+  color: var(--primary-color);
+}
+
+.dark-theme-compatible .about-section .stat-label {
+  color: var(--text-secondary);
+}
+
+/* Стилове за бутоните в тъмна тема */
+.dark-theme-compatible .about-section .btn-outline {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dark-theme-compatible .about-section .btn-outline:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Ако нямате променливи, използвайте директни цветове */
+@media (prefers-color-scheme: dark) {
+  .dark-theme-compatible .about-section {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+  
+  .dark-theme-compatible .about-section .section-subtitle,
+  .dark-theme-compatible .about-section .stat-label {
+    color: #cccccc;
+  }
+  
+  .dark-theme-compatible .about-section .btn-outline {
+    border-color: #007bff;
+    color: #007bff;
+  }
+  
+  .dark-theme-compatible .about-section .btn-outline:hover {
+    background-color: #007bff;
+    color: #ffffff;
+  }
+}
+/* ДОБАВЕТЕ ТОВА В Home.css след всички други стилове */
+
+/* Dark theme fixes for About Section */
+[data-theme="dark"] .about-section {
+  background: var(--light-section) !important;
+}
+
+[data-theme="dark"] .about-section .section-subtitle {
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .about-section .about-subtitle {
+  color: var(--text-dark) !important;
+}
+
+[data-theme="dark"] .about-section .about-description p {
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .about-section .stat-number {
+  color: var(--primary-green) !important;
+}
+
+[data-theme="dark"] .about-section .stat-label {
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .about-section .btn-outline {
+  border-color: var(--primary-green) !important;
+  color: var(--primary-green) !important;
+}
+
+[data-theme="dark"] .about-section .btn-outline:hover {
+  background-color: var(--primary-green) !important;
+  color: var(--card-bg) !important;
+}
+
+/* Заменете съществуващия код за .dark-theme-compatible със следното: */
+.about-section {
+  background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-section) 100%);
+}
+
+[data-theme="dark"] .about-section {
+  background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-section) 100%);
+}

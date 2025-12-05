@@ -986,3 +986,148 @@
   background: var(--light-section);
   font-weight: 600;
 }
+
+/* ДОБАВЕТЕ ТОВА В КРАЯ НА EventsPage.css */
+
+/* Dark Theme Text Color Fixes */
+[data-theme="dark"] .event-description,
+[data-theme="dark"] .event-description p,
+[data-theme="dark"] .event-description li,
+[data-theme="dark"] .event-description span,
+[data-theme="dark"] .event-description div:not(.event-title-section):not(.calendar-date):not(.status-badge):not(.view-details-btn):not(.btn-icon) {
+  color: var(--text-gray) !important;
+}
+
+/* Dark theme for event details */
+[data-theme="dark"] .event-detail,
+[data-theme="dark"] .event-detail span,
+[data-theme="dark"] .event-details {
+  color: var(--text-gray) !important;
+}
+
+/* Dark theme for participants info */
+[data-theme="dark"] .participants-info,
+[data-theme="dark"] .participants-info span {
+  color: var(--text-dark) !important;
+}
+
+/* Dark theme for spots count */
+[data-theme="dark"] .spots-count {
+  color: var(--text-muted) !important;
+}
+
+/* Dark theme for calendar text */
+[data-theme="dark"] .calendar-day {
+  color: var(--primary-green) !important;
+}
+
+[data-theme="dark"] .calendar-month,
+[data-theme="dark"] .calendar-weekday {
+  color: var(--text-gray) !important;
+}
+
+/* Dark theme for table header */
+[data-theme="dark"] .events-table-header th {
+  color: var(--text-dark) !important;
+  border-bottom: 2px solid var(--border-medium) !important;
+}
+
+/* Dark theme for table rows */
+[data-theme="dark"] .event-table-row {
+  border-bottom: 1px solid var(--border-medium) !important;
+}
+
+[data-theme="dark"] .event-table-row:hover {
+  background: #2d3748 !important;
+}
+
+/* Dark theme for calendar date background */
+[data-theme="dark"] .calendar-date {
+  background: #2d3748 !important;
+  border-color: #4a5568 !important;
+}
+
+/* Dark theme for loading text */
+[data-theme="dark"] .loading-spinner span {
+  color: var(--text-dark) !important;
+}
+
+/* Dark theme for no events text */
+[data-theme="dark"] .no-events p {
+  color: var(--text-gray) !important;
+}
+
+/* Dark theme for HTML formatting in description */
+[data-theme="dark"] .event-description h1,
+[data-theme="dark"] .event-description h2,
+[data-theme="dark"] .event-description h3,
+[data-theme="dark"] .event-description strong {
+  color: var(--text-dark) !important;
+}
+
+[data-theme="dark"] .event-description em,
+[data-theme="dark"] .event-description i {
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .event-description blockquote {
+  border-left-color: var(--primary-green) !important;
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .event-description code,
+[data-theme="dark"] .event-description pre {
+  background: #2d3748 !important;
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .event-description a {
+  color: var(--primary-green) !important;
+}
+
+[data-theme="dark"] .event-description table th {
+  background: #2d3748 !important;
+  color: var(--text-dark) !important;
+}
+
+[data-theme="dark"] .event-description table td {
+  color: var(--text-gray) !important;
+  border-color: #4a5568 !important;
+}
+
+/* Dark theme for specific text elements in table */
+[data-theme="dark"] .events-subtitle {
+  color: var(--text-gray) !important;
+}
+
+[data-theme="dark"] .events-count,
+[data-theme="dark"] .search-results {
+  color: white !important;
+}
+
+/* Fix for search results text */
+[data-theme="dark"] .search-results {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Допълнителни фиксове за текст в тъмна тема */
+[data-theme="dark"] {
+  /* Уверете се, че всички текстове са правилни */
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .events-page *:not(.handwritten-title):not(.handwritten-title-small):not(.calendar-day):not(.status-badge):not(.view-details-btn) {
+  color: inherit;
+}
+
+/* Reset any black text */
+[data-theme="dark"] .event-table-cell,
+[data-theme="dark"] .events-content,
+[data-theme="dark"] .events-table {
+  color: var(--text-dark) !important;
+}
+
+/* Specific fix for event title */
+[data-theme="dark"] .event-title {
+  color: var(--text-dark) !important;
+}

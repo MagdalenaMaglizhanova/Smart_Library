@@ -142,19 +142,18 @@ const Home: React.FC = () => {
   };
 
   // Функция за премахване на HTML тагове и съкращаване на текста
-  // Промени тази функция:
-const truncateText = (html: string, maxChars: number = 200): string => {
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  const plainText = tempDiv.textContent || tempDiv.innerText || '';
-  
-  // Съкращаваме текста по брой знаци
-  if (plainText.length <= maxChars) {
-    return plainText;
-  }
-  
-  return plainText.substring(0, maxChars) + '...';
-};
+  const truncateText = (html: string, maxChars: number = 200): string => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Съкращаваме текста по брой знаци
+    if (plainText.length <= maxChars) {
+      return plainText;
+    }
+    
+    return plainText.substring(0, maxChars) + '...';
+  };
 
   // Зареждане на събития от Firestore
   const fetchEvents = async () => {
@@ -324,6 +323,17 @@ const truncateText = (html: string, maxChars: number = 200): string => {
         }
       ];
       setNews(fallbackNews);
+    }
+  };
+
+  // Функция за регистрация в системата (става читател)
+  const handleBecomeReader = () => {
+    if (user) {
+      // Ако потребителят е вече влязъл, пренасочваме към профила
+      navigate('/dashboard');
+    } else {
+      // Ако не е влязъл, пренасочваме към регистрация
+      navigate('/register');
     }
   };
 
@@ -556,12 +566,22 @@ const truncateText = (html: string, maxChars: number = 200): string => {
             </div>
 
             <div className="hero-buttons">
-              <button className="btn btn-primary">
+              {/* Променен бутон "Разгледай каталога" */}
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/catalog')}
+              >
                 <span>Разгледай каталога</span>
                 <ArrowRight className="btn-icon" />
               </button>
-              <button className="btn btn-secondary">
-                Стани читател
+              
+              {/* Променен бутон "Стани читател" */}
+              <button 
+                className="btn btn-secondary"
+                onClick={handleBecomeReader}
+              >
+                <BookOpen className="btn-icon" />
+                <span>Стани читател</span>
               </button>
             </div>
           </div>
@@ -645,7 +665,10 @@ const truncateText = (html: string, maxChars: number = 200): string => {
           </div>
 
           <div className="catalog-footer">
-            <button className="btn btn-outline catalog-btn">
+            <button 
+              className="btn btn-outline catalog-btn"
+              onClick={() => navigate('/catalog')}
+            >
               Виж всички книги
             </button>
           </div>
@@ -811,10 +834,10 @@ const truncateText = (html: string, maxChars: number = 200): string => {
                     {/* Съкратено описание с бутон "Виж повече" */}
                     <div className="event-description-container">
                       <div 
-  className="event-description-calendar truncated-description"
->
-  {truncateText(event.description, 150)} {/* Ограничи до 150 знака */}
-</div>
+                        className="event-description-calendar truncated-description"
+                      >
+                        {truncateText(event.description, 150)}
+                      </div>
                       <div className="view-more-container">
                         <button 
                           className={`view-more-btn ${colorClass}`}
@@ -934,8 +957,8 @@ const truncateText = (html: string, maxChars: number = 200): string => {
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="about-section">
+      {/* About Section - Добавен CSS клас за тъмна тема */}
+      <section className="about-section dark-theme-compatible">
         <div className="container">
           <div className="section-header">
             <h2 className="handwritten-title">За библиотеката</h2>

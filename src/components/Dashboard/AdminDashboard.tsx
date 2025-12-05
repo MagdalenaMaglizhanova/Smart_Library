@@ -13,6 +13,7 @@ interface UserEvent {
 }
 
 interface User {
+  uid: string; // добавено
   id: string;
   email: string;
   role: string;
@@ -31,6 +32,7 @@ interface User {
   };
 }
 
+
 interface Event {
   id: string;
   title: string;
@@ -41,6 +43,7 @@ interface Event {
   location: string;
   maxParticipants: number;
   currentParticipants: number;
+  participants: string[];     
   allowedRoles: string[];
   createdAt: any;
   organizer: string;
@@ -931,7 +934,6 @@ console.log(updateMaxParticipants);
       <div className="dashboard-container">
         <div className="dashboard-header">
           <h1>Административен Панел</h1>
-          <p>Управление на потребители и събития</p>
         </div>
 
         <div className="search-section">
@@ -1239,32 +1241,39 @@ console.log(updateMaxParticipants);
                           <option value="admin">Администратор</option>
                         </select>
                       </td>
-                      <td>
-                        <div className="user-events-section">
-                          {user.events && user.events.length > 0 ? (
-                            <div className="user-events-list">
-                              {user.events.slice(0, 3).map((event: UserEvent, index: number) => {
-                                const eventObj = events.find(e => e.id === event.eventId);
-                                return eventObj ? (
-                                  <div key={index} className="user-event-item">
-                                    <span className="event-title">{eventObj.title}</span>
-                                    <span className="event-date">
-                                      {new Date(eventObj.date).toLocaleDateString('bg-BG')}
-                                    </span>
-                                  </div>
-                                ) : null;
-                              })}
-                              {user.events.length > 3 && (
-                                <div className="more-events">
-                                  + още {user.events.length - 3} събития
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="no-events">Няма записани събития</span>
-                          )}
-                        </div>
-                      </td>
+ <td>
+  <div className="user-events-section">
+    {(() => {
+      // Филтрираме само събитията, в които е записан потребителят
+      const userEvents = events.filter(e => e.participants?.includes(user.id));
+
+      if (userEvents.length === 0) {
+        return <span className="no-events">Няма записани събития</span>;
+      }
+
+      return (
+        <div className="user-events-list">
+          {userEvents.slice(0, 3).map((eventObj, index) => (
+            <div key={index} className="user-event-item">
+              <span className="event-title">{eventObj.title}</span>
+              <span className="event-date">
+                {new Date(eventObj.date).toLocaleDateString('bg-BG')}
+              </span>
+            </div>
+          ))}
+          {userEvents.length > 3 && (
+            <div className="more-events">
+              + още {userEvents.length - 3} събития
+            </div>
+          )}
+        </div>
+      );
+    })()}
+  </div>
+</td>
+
+
+
                       <td>
                         <button
                           onClick={() => deleteUser(user.id)}
