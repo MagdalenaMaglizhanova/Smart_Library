@@ -294,7 +294,6 @@ const UserDashboard: React.FC = () => {
         {/* Header */}
         <div className="dashboard-header">
           <h1>Моят Профил</h1>
-          <p>Управление на вашите книги и събития</p>
         </div>
 
         {/* Search */}
@@ -397,7 +396,7 @@ const UserDashboard: React.FC = () => {
         {/* Events Tab */}
 {activeTab === "events" && (
   <div className="content-section">
-    <h2>Библиотечни Събития</h2>
+    <h2>Събития</h2>
 
     <div className="table-container">
       <table className="data-table events-table">
