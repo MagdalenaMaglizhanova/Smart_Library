@@ -2,7 +2,7 @@
 .user-dashboard {
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-  padding: 90px;
+  padding: 20px 16px;
 }
 
 .dashboard-container {
@@ -13,24 +13,26 @@
 /* Header */
 .dashboard-header {
   text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
+  margin-bottom: 24px;
+  padding: 20px 16px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .dashboard-header h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #1a7c3a;
   margin: 0 0 8px 0;
+  line-height: 1.3;
 }
 
 .dashboard-header p {
   color: #64748b;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 /* Search */
@@ -50,17 +52,17 @@
   top: 50%;
   transform: translateY(-50%);
   color: #64748b;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px 12px 12px 40px;
+  padding: 14px 14px 14px 42px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 10px;
   background: white;
-  font-size: 14px;
+  font-size: 15px;
   transition: all 0.3s ease;
 }
 
@@ -73,28 +75,31 @@
 /* Tabs */
 .tabs-section {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 24px;
   background: white;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .tab-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 6px;
+  padding: 14px 12px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #64748b;
   cursor: pointer;
   transition: all 0.3s ease;
   flex: 1;
   justify-content: center;
   font-weight: 500;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .tab-button.active {
@@ -111,39 +116,48 @@
 .content-section {
   background: white;
   border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
 }
 
 .content-section h2 {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: #1a2935;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
+  line-height: 1.3;
 }
 
 /* Tables */
 .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -16px;
+  padding: 0 16px;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px;
 }
 
 .data-table th {
   background: #f8fafc;
-  padding: 12px 16px;
+  padding: 14px 12px;
   text-align: left;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .data-table td {
-  padding: 12px 16px;
+  padding: 14px 12px;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
 }
 
 .data-table tr:hover {
@@ -152,12 +166,14 @@
 
 /* Status Badges */
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: inline-block;
+  text-align: center;
+  min-width: 85px;
 }
 
 .status-active {
@@ -188,19 +204,22 @@
 .action-buttons {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .return-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   background: #1a7c3a;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .return-btn:hover {
@@ -211,13 +230,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   background: #6b7280;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .delete-btn:hover {
@@ -225,50 +246,72 @@
 }
 
 .register-btn {
-  padding: 6px 12px;
+  padding: 10px 16px;
   background: #1a7c3a;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   transition: all 0.3s ease;
+  min-width: 100px;
+  text-align: center;
 }
 
-.register-btn:hover {
+.register-btn:hover:not(:disabled) {
   background: #166532;
+  transform: translateY(-1px);
+}
+
+.register-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .unregister-btn {
-  padding: 6px 12px;
+  padding: 10px 16px;
   background: #dc2626;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   transition: all 0.3s ease;
+  min-width: 100px;
+  text-align: center;
 }
 
-.unregister-btn:hover {
+.unregister-btn:hover:not(:disabled) {
   background: #b91c1c;
+  transform: translateY(-1px);
 }
 
 /* Icons in Tables */
 .book-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   color: #1a7c3a;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .date-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   color: #6b7280;
   margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.location-icon {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 /* Text Styles */
@@ -277,26 +320,20 @@
   align-items: center;
   font-weight: 500;
   color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .book-author {
   color: #6b7280;
+  font-size: 0.9rem;
 }
 
-.event-title {
+.event-title-cell {
   font-weight: 600;
   color: #1f2937;
-}
-
-.event-desc {
-  color: #6b7280;
-  max-width: 200px;
-}
-
-.event-date {
-  display: flex;
-  align-items: center;
-  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.3;
 }
 
 .due-date {
@@ -304,43 +341,418 @@
   font-size: 0.875rem;
 }
 
+/* Events Table Specific */
+.events-table {
+  min-width: 800px;
+}
+
+.events-table th {
+  padding: 16px 12px;
+  font-size: 0.85rem;
+}
+
+.events-table td {
+  padding: 16px 12px;
+}
+
+/* Колонка за заглавие */
+.event-title-cell {
+  width: 15%;
+  min-width: 140px;
+}
+
+.event-title-content {
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+/* Колонка за описание */
+.event-desc-cell {
+  width: 25%;
+  min-width: 220px;
+}
+
+.event-description {
+  color: #4b5563;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 8px;
+  font-size: 0.9rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.event-description p {
+  margin: 0 0 10px 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.event-description p:last-child {
+  margin-bottom: 0;
+}
+
+.event-description ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.event-description li {
+  margin-bottom: 6px;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.event-description li p {
+  margin: 0;
+}
+
+.event-description strong {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+/* Колонка за дата и час */
+.event-date-cell {
+  width: 15%;
+  min-width: 130px;
+}
+
+.event-date-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.event-date-text {
+  color: #1f2937;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.event-time {
+  color: #6b7280;
+  font-size: 0.85rem;
+  padding-left: 22px;
+}
+
+/* Колонка за място */
+.event-location-cell {
+  width: 12%;
+  min-width: 110px;
+}
+
+.event-location-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Колонка за места */
+.event-spots-cell {
+  width: 10%;
+  min-width: 100px;
+}
+
+.event-spots-content {
+  font-size: 0.85rem;
+}
+
+.spots-count {
+  display: inline-block;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #374151;
+  font-weight: 500;
+  text-align: center;
+  min-width: 90px;
+}
+
+.spots-full {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 50px 20px;
   color: #6b7280;
 }
 
 .empty-state svg {
   margin-bottom: 16px;
   opacity: 0.5;
+  width: 40px;
+  height: 40px;
 }
 
-/* Responsive Design */
+.empty-state p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.loading-cell {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Scrollbar за описанието */
+.event-description::-webkit-scrollbar {
+  width: 4px;
+}
+
+.event-description::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.event-description::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.event-description::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Мобилни оптимизации */
 @media (max-width: 768px) {
   .user-dashboard {
-    padding: 12px;
+    padding: 16px 12px;
   }
   
-  .tabs-section {
-    flex-direction: column;
+  .dashboard-header {
+    padding: 18px 14px;
+    margin-bottom: 20px;
   }
   
   .dashboard-header h1 {
     font-size: 1.5rem;
   }
   
-  .data-table {
+  .dashboard-header p {
+    font-size: 0.95rem;
+  }
+  
+  .search-input {
+    padding: 13px 13px 13px 40px;
     font-size: 14px;
+  }
+  
+  .tabs-section {
+    margin-bottom: 20px;
+  }
+  
+  .tab-button {
+    padding: 12px 10px;
+    font-size: 0.9rem;
+    gap: 5px;
+  }
+  
+  .content-section {
+    padding: 18px 14px;
+  }
+  
+  .content-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 14px;
+  }
+  
+  .table-container {
+    margin: 0 -14px;
+    padding: 0 14px;
   }
   
   .data-table th,
   .data-table td {
-    padding: 8px 12px;
+    padding: 12px 10px;
+  }
+  
+  .status-badge {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    min-width: 75px;
+  }
+  
+  .register-btn,
+  .unregister-btn {
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    min-width: 90px;
+  }
+  
+  .event-description {
+    max-height: 100px;
+    font-size: 0.85rem;
+  }
+  
+  .spots-count {
+    padding: 5px 8px;
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-dashboard {
+    padding: 12px 10px;
+  }
+  
+  .dashboard-header {
+    padding: 16px 12px;
+    margin-bottom: 18px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.35rem;
+  }
+  
+  .dashboard-header p {
+    font-size: 0.9rem;
+  }
+  
+  .tab-button {
+    padding: 11px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .tab-button svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .content-section {
+    padding: 16px 12px;
+    border-radius: 10px;
+  }
+  
+  .content-section h2 {
+    font-size: 1.2rem;
+  }
+  
+  .table-container {
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+  
+  .data-table {
+    min-width: 650px;
+  }
+  
+  .data-table th {
+    padding: 11px 8px;
+    font-size: 0.8rem;
+  }
+  
+  .data-table td {
+    padding: 11px 8px;
+  }
+  
+  .status-badge {
+    font-size: 0.65rem;
+    min-width: 70px;
+    padding: 4px 6px;
   }
   
   .action-buttons {
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+  }
+  
+  .register-btn,
+  .unregister-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+  
+  .return-btn,
+  .delete-btn {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 6px;
+  }
+  
+  .event-description {
+    max-height: 90px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  
+  .event-description p,
+  .event-description li {
+    font-size: 0.8rem;
+  }
+  
+  .event-title-content,
+  .event-date-text {
+    font-size: 0.85rem;
+  }
+  
+  .event-time {
+    font-size: 0.8rem;
+  }
+  
+  .event-location-content {
+    font-size: 0.85rem;
+  }
+  
+  .spots-count {
+    font-size: 0.75rem;
+    min-width: 70px;
+  }
+  
+  .empty-state {
+    padding: 40px 16px;
+  }
+  
+  .empty-state svg {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .empty-state p {
+    font-size: 0.95rem;
+  }
+}
+
+/* Още оптимизации за много малки екрани */
+@media (max-width: 360px) {
+  .user-dashboard {
+    padding: 10px 8px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .tab-button {
+    font-size: 0.8rem;
+    padding: 10px 6px;
+  }
+  
+  .tab-button svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .search-input {
+    padding: 12px 12px 12px 38px;
+    font-size: 13px;
+  }
+  
+  .search-icon {
+    width: 16px;
+    height: 16px;
   }
 }

@@ -395,100 +395,115 @@ const UserDashboard: React.FC = () => {
         )}
 
         {/* Events Tab */}
-        {activeTab === "events" && (
-          <div className="content-section">
-            <h2>Библиотечни Събития</h2>
+{activeTab === "events" && (
+  <div className="content-section">
+    <h2>Библиотечни Събития</h2>
 
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Заглавие</th>
-                    <th>Описание</th>
-                    <th>Дата и час</th>
-                    <th>Място</th>
-                    <th>Места</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={7} className="loading-cell">
-                        Зареждане на събития...
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredEvents.map(event => {
-                      const userRegistered = isUserRegistered(event);
-                      const availableSpots = getAvailableSpots(event);
-                      const isFull = isEventFull(event);
-                      const isProcessing = processingEvent === event.id;
-                      
-                      return (
-                        <tr key={event.id}>
-                          <td className="event-title">{event.title}</td>
-                          <td className="event-desc">{event.description}</td>
-                          <td className="event-date">
-                            <div>
-                              <Clock className="date-icon" />
-                              {event.date}
-                            </div>
-                            <div className="event-time">
-                              {event.time} - {event.endTime}
-                            </div>
-                          </td>
-                          <td className="event-location">
-                            <User className="location-icon" />
-                            {event.location}
-                          </td>
-                          <td className="event-spots">
-                            <span className={`spots-count ${isFull ? 'spots-full' : ''}`}>
-                              {availableSpots} / {event.maxParticipants}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`status-badge ${userRegistered ? 'status-active' : isFull ? 'status-expiring' : 'status-default'}`}>
-                              {userRegistered ? 'Записан' : isFull ? 'Пълно' : 'Свободно'}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="action-buttons">
-                              {userRegistered ? (
-                                <button
-                                  onClick={() => unregisterFromEvent(event.id)}
-                                  className="unregister-btn"
-                                  disabled={isProcessing}
-                                  title="Откажи записването"
-                                >
-                                  {isProcessing ? '...' : 'Откажи'}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => registerForEvent(event.id)}
-                                  className="register-btn"
-                                  disabled={isFull || isProcessing}
-                                  title={isFull ? 'Събитието е пълно' : 'Запиши се'}
-                                >
-                                  {isProcessing ? '...' : isFull ? 'Пълно' : 'Запиши се'}
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-              {!loading && filteredEvents.length === 0 && (
-                <div className="empty-state">
-                  <Calendar size={32} />
-                  <p>Няма намерени събития</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+    <div className="table-container">
+      <table className="data-table events-table">
+        <thead>
+          <tr>
+            <th className="event-title-header">Заглавие</th>
+            <th className="event-desc-header">Описание</th>
+            <th className="event-date-header">Дата и час</th>
+            <th className="event-location-header">Място</th>
+            <th className="event-spots-header">Места</th>
+            <th className="event-status-header">Статус</th>
+            <th className="event-actions-header">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan={7} className="loading-cell">
+                Зареждане на събития...
+              </td>
+            </tr>
+          ) : (
+            filteredEvents.map(event => {
+              const userRegistered = isUserRegistered(event);
+              const availableSpots = getAvailableSpots(event);
+              const isFull = isEventFull(event);
+              const isProcessing = processingEvent === event.id;
+              
+              return (
+                <tr key={event.id}>
+                  <td className="event-title-cell">
+                    <div className="event-title-content">
+                      <strong>{event.title}</strong>
+                    </div>
+                  </td>
+<td className="event-desc-cell">
+  <div 
+    className="event-description"
+    dangerouslySetInnerHTML={{ __html: event.description }}
+  />
+</td>
+                  <td className="event-date-cell">
+                    <div className="event-date-content">
+                      <Clock className="date-icon" />
+                      <span className="event-date-text">{event.date}</span>
+                    </div>
+                    <div className="event-time">
+                      {event.time} - {event.endTime}
+                    </div>
+                  </td>
+                  <td className="event-location-cell">
+                    <div className="event-location-content">
+                      <User className="location-icon" />
+                      <span>{event.location}</span>
+                    </div>
+                  </td>
+                  <td className="event-spots-cell">
+                    <div className="event-spots-content">
+                      <span className={`spots-count ${isFull ? 'spots-full' : ''}`}>
+                        {availableSpots} свободни от {event.maxParticipants}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="event-status-cell">
+                    <span className={`status-badge ${userRegistered ? 'status-active' : isFull ? 'status-expiring' : 'status-default'}`}>
+                      {userRegistered ? 'Записан' : isFull ? 'Пълно' : 'Свободно'}
+                    </span>
+                  </td>
+                  <td className="event-actions-cell">
+                    <div className="action-buttons">
+                      {userRegistered ? (
+                        <button
+                          onClick={() => unregisterFromEvent(event.id)}
+                          className="unregister-btn"
+                          disabled={isProcessing}
+                          title="Откажи записването"
+                        >
+                          {isProcessing ? '...' : 'Откажи'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => registerForEvent(event.id)}
+                          className="register-btn"
+                          disabled={isFull || isProcessing}
+                          title={isFull ? 'Събитието е пълно' : 'Запиши се'}
+                        >
+                          {isProcessing ? '...' : isFull ? 'Пълно' : 'Запиши се'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+      {!loading && filteredEvents.length === 0 && (
+        <div className="empty-state">
+          <Calendar size={32} />
+          <p>Няма намерени събития</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
