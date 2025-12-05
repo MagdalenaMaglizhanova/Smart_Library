@@ -1554,3 +1554,56 @@
     justify-content: center;
   }
 }
+
+/* Стилове за секцията със събития на потребителите */
+.user-events-section {
+  max-width: 300px;
+}
+
+.user-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-event-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #4f46e5;
+  font-size: 12px;
+}
+
+.user-event-item .event-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 2px;
+}
+
+.user-event-item .event-date {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.no-events {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.more-events {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+  cursor: pointer;
+}
+
+.more-events:hover {
+  background-color: #d1d5db;
+}

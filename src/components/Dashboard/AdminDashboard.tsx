@@ -6,10 +6,29 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import './AdminDashboard.css';
 
+interface UserEvent {
+  eventId: string;
+  registrationDate: any;
+  status?: string;
+}
+
 interface User {
   id: string;
   email: string;
   role: string;
+  events?: UserEvent[];
+  books?: any[];
+  createdAt?: any;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  profile?: {
+    displayName?: string;
+    firstName?: string;
+    grade?: string;
+    lastName?: string;
+    phone?: string;
+  };
 }
 
 interface Event {
@@ -517,10 +536,21 @@ const AdminDashboard: React.FC = () => {
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "users"));
-    const usersData: User[] = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as User));
+    const usersData: User[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email || '',
+        role: data.role || 'reader',
+        events: data.events || [], // Взимаме events от базата данни
+        books: data.books || [],
+        createdAt: data.createdAt || null,
+        displayName: data.displayName || '',
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        profile: data.profile || {}
+      } as User;
+    });
     setUsers(usersData);
   };
 
@@ -1190,6 +1220,7 @@ console.log(updateMaxParticipants);
                   <tr>
                     <th>Имейл</th>
                     <th>Роля</th>
+                    <th>Записани събития</th>
                     <th>Действия</th>
                   </tr>
                 </thead>
@@ -1207,6 +1238,32 @@ console.log(updateMaxParticipants);
                           <option value="librarian">Библиотекар</option>
                           <option value="admin">Администратор</option>
                         </select>
+                      </td>
+                      <td>
+                        <div className="user-events-section">
+                          {user.events && user.events.length > 0 ? (
+                            <div className="user-events-list">
+                              {user.events.slice(0, 3).map((event: UserEvent, index: number) => {
+                                const eventObj = events.find(e => e.id === event.eventId);
+                                return eventObj ? (
+                                  <div key={index} className="user-event-item">
+                                    <span className="event-title">{eventObj.title}</span>
+                                    <span className="event-date">
+                                      {new Date(eventObj.date).toLocaleDateString('bg-BG')}
+                                    </span>
+                                  </div>
+                                ) : null;
+                              })}
+                              {user.events.length > 3 && (
+                                <div className="more-events">
+                                  + още {user.events.length - 3} събития
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="no-events">Няма записани събития</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <button
