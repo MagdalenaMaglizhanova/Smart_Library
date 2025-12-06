@@ -383,42 +383,34 @@ const [cameraError, setCameraError] = useState<string>('');
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
-// ----------- handle QR scan -----------
+
 // ----------- handle QR scan -----------
 const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
-  if (!detectedCodes || detectedCodes.length === 0) return;
+  if (!detectedCodes?.length) return;
 
-  const scannedValue = detectedCodes[0].rawValue;
-  if (!scannedValue) return;
+  const raw = detectedCodes[0].rawValue;
+  if (!raw) return;
 
-  // Извличаме TICKETID от JSON
-  let ticketId = '';
-  try {
-    const parsed = JSON.parse(scannedValue);
-    if (parsed.TICKETID) {
-      ticketId = parsed.TICKETID;
-    } else {
-      // Ако няма TICKETID, проверим дали не е вече чист ticketId
-      ticketId = scannedValue.toUpperCase();
+  // Опитваме да вземем TICKETID от JSON, ако е валиден
+  const ticketId = (() => {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed.TICKETID || raw;
+    } catch {
+      return raw;
     }
-  } catch {
-    // Ако не е валиден JSON, приемем че е вече чист ticketId
-    ticketId = scannedValue.toUpperCase();
-  }
+  })()
+  .replace(/^TICKET-/i, '')  // премахваме "TICKET-" в началото
+  .toUpperCase();
 
-  // Премахваме "TICKET-" ако го има вече
-  ticketId = ticketId.replace('TICKET-', '').toUpperCase();
-  
-  // Добавяме "TICKET-" отпред
   const finalTicketId = `TICKET-${ticketId}`;
-  
-  // Сетваме в полето
+
   setTicketSearchTerm(finalTicketId);
   console.log("Сканиран ticketId:", finalTicketId);
 
-  // Автоматично търсене на билета
   await searchTicket(finalTicketId);
 };
+
 
 // ----------- handle QR error -----------
 const handleQrError = (error: any) => {
