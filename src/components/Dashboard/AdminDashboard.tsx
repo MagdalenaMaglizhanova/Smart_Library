@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc  } from "firebase/firestore";
 import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff, BarChart3 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -285,75 +285,88 @@ const AdminDashboard: React.FC = () => {
   }, [showTodayStats, events]);
 
   const loadTodayStats = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const scannedTickets: TicketDetail[] = [];
-    
-    let total = 0;
-    let checkedIn = 0;
-    let pending = 0;
-    
-    events.forEach(event => {
-      if (event.tickets) {
-        Object.entries(event.tickets).forEach(([userId, ticket]) => {
-          total++;
-          if (ticket.checkedIn) {
-            checkedIn++;
-            
-            // Проверяваме дали билетът е сканиран днес
-            const checkedInDate = ticket.checkedInTime?.toDate?.();
-            const ticketDate = checkedInDate ? checkedInDate.toISOString().split('T')[0] : '';
-            
-            if (ticketDate === today) {
-              const user = users.find(u => u.id === userId);
-              scannedTickets.push({
-                ticketId: ticket.ticketId,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventTime: event.time,
-                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-                userEmail: user?.email || "Няма имейл",
-                scanTime: checkedInDate ? checkedInDate.toLocaleString('bg-BG') : "Днес",
-                status: 'checked'
-              });
-            }
-          } else {
-            pending++;
-            
-            // ДОБАВЯМЕ: Показваме и несканирани билети за днешните събития
-            const eventDate = event.date;
-            if (eventDate === today) {
-              const user = users.find(u => u.id === userId);
-              scannedTickets.push({
-                ticketId: ticket.ticketId,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventTime: event.time,
-                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-                userEmail: user?.email || "Няма имейл",
-                scanTime: "Очаква сканиране",
-                status: 'pending'
-              });
-            }
+  const today = new Date().toISOString().split('T')[0];
+  const scannedTickets: TicketDetail[] = [];
+  
+  let total = 0;
+  let checkedIn = 0;
+  let pending = 0;
+  
+  events.forEach(event => {
+    if (event.tickets) {
+      Object.entries(event.tickets).forEach(([userId, ticket]) => {
+        total++;
+        
+        // Проверяваме статуса на билета
+        if (ticket.checkedIn) {
+          checkedIn++;
+          
+          // ПРОМЯНА: Проверяваме дали билетът е сканиран днес
+          const checkedInDate = ticket.checkedInTime?.toDate?.();
+          const ticketDate = checkedInDate ? checkedInDate.toISOString().split('T')[0] : '';
+          
+          // Показваме всички билети, сканирани днес, независимо от датата на събитието
+          if (ticketDate === today) {
+            const user = users.find(u => u.id === userId);
+            scannedTickets.push({
+              ticketId: ticket.ticketId,
+              eventTitle: event.title,
+              eventDate: event.date,
+              eventTime: event.time,
+              userName: user?.displayName || user?.firstName || "Неизвестен потребител",
+              userEmail: user?.email || "Няма имейл",
+              scanTime: checkedInDate ? checkedInDate.toLocaleString('bg-BG') : "Днес",
+              status: 'checked'
+            });
           }
-        });
-      }
-    });
+        } else {
+          pending++;
+          
+          // ПРОМЯНА: Показваме всички несканирани билети
+          // Може да ограничим само за днешни или бъдещи събития:
+          const eventDate = event.date;
+          const todayDate = new Date();
+          const eventDateTime = new Date(eventDate + 'T' + event.time);
+          
+          // Показваме билети за днешни или бъдещи събития
+          if (eventDateTime >= todayDate) {
+            const user = users.find(u => u.id === userId);
+            scannedTickets.push({
+              ticketId: ticket.ticketId,
+              eventTitle: event.title,
+              eventDate: event.date,
+              eventTime: event.time,
+              userName: user?.displayName || user?.firstName || "Неизвестен потребител",
+              userEmail: user?.email || "Няма имейл",
+              scanTime: "Очаква сканиране",
+              status: 'pending'
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  // Сортираме по дата на събитие (най-близките първи)
+  scannedTickets.sort((a, b) => {
+    const dateA = new Date(a.eventDate + 'T' + a.eventTime);
+    const dateB = new Date(b.eventDate + 'T' + b.eventTime);
     
-    // Сортираме по време на сканиране (новите най-отгоре)
-    scannedTickets.sort((a, b) => {
-      if (a.scanTime === "Очаква сканиране" && b.scanTime !== "Очаква сканиране") return 1;
-      if (b.scanTime === "Очаква сканиране" && a.scanTime !== "Очаква сканиране") return -1;
-      return 0;
-    });
+    // Първо сортираме по статус (чакащи първи)
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (b.status === 'pending' && a.status !== 'pending') return 1;
     
-    setTodayStats({
-      totalTickets: total,
-      checkedInTickets: checkedIn,
-      pendingTickets: pending,
-      todayScannedTickets: scannedTickets
-    });
-  };
-
+    // После по дата (най-близките първи)
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  setTodayStats({
+    totalTickets: total,
+    checkedInTickets: checkedIn,
+    pendingTickets: pending,
+    todayScannedTickets: scannedTickets
+  });
+};
   const locationOptions = [
     "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
     "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
@@ -506,82 +519,67 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const checkInTicket = async () => {
-    if (!checkTicketModalData) return;
-
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Регистриране на билет...");
-
-      const eventRef = doc(db, "events", checkTicketModalData.eventId);
-      
-      // Намираме потребителя по ticketId
-      const event = events.find(e => e.id === checkTicketModalData.eventId);
-      let userIdToUpdate = "";
-      
-      if (event && event.tickets) {
-        for (const [userId, ticket] of Object.entries(event.tickets)) {
-          if (ticket.ticketId === checkTicketModalData.ticketId) {
-            userIdToUpdate = userId;
-            break;
-          }
-        }
-      }
-      
-      if (!userIdToUpdate) {
-        throw new Error("Не може да се намери потребител за билета");
-      }
-
-      const now = new Date();
-      // Обновяваме билета в Firestore
-      await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: true,
-        [`tickets.${userIdToUpdate}.checkedInTime`]: now
-      });
-
-      // Обновяваме локалното състояние
-      setEvents(prevEvents => 
-        prevEvents.map(event => {
-          if (event.id === checkTicketModalData.eventId && event.tickets) {
-            const updatedTickets = { ...event.tickets };
-            if (updatedTickets[userIdToUpdate]) {
-              updatedTickets[userIdToUpdate] = { 
-                ...updatedTickets[userIdToUpdate], 
-                checkedIn: true,
-                checkedInTime: now 
-              };
-            }
-            return { ...event, tickets: updatedTickets };
-          }
-          return event;
-        })
-      );
-
-      // Обновяваме модалните данни
-      setCheckTicketModalData(prev => prev ? { 
-        ...prev, 
-        checkedIn: true,
-        checkedInTime: now.toLocaleString('bg-BG')
-      } : null);
-      
-      setTicketStatusMessage("Билетът е успешно регистриран!");
-      setTicketStatusType("success");
-      
-      // Обновяваме статистиката
-      loadTodayStats();
-      
-      setTimeout(() => {
-        setTicketStatusMessage("");
-      }, 3000);
-
-    } catch (error) {
-      console.error("Грешка при регистриране на билет:", error);
-      setTicketStatusMessage("Възникна грешка при регистрирането!");
-      setTicketStatusType("error");
-    } finally {
-      setIsCheckingTicket(false);
+ const checkInTicket = async () => {
+  if (!checkTicketModalData) return;
+  
+  try {
+    setIsCheckingTicket(true);
+    setTicketStatusMessage("Регистриране...");
+    
+    const eventRef = doc(db, "events", checkTicketModalData.eventId);
+    const eventDoc = await getDoc(eventRef);
+    
+    if (!eventDoc.exists()) {
+      throw new Error("Събитието не е намерено");
     }
-  };
+    
+    const eventData = eventDoc.data();
+    const tickets = eventData.tickets || {};
+    
+    // НОВ МЕТОД: Намираме правилния ключ
+    let correctKey = null;
+    for (const [key, ticket] of Object.entries(tickets)) {
+      const ticketObj = ticket as any; // Type assertion за типовете
+      if (ticketObj.ticketId === checkTicketModalData.ticketId) {
+        correctKey = key;
+        break;
+      }
+    }
+    
+    if (!correctKey) {
+      throw new Error("Не може да се намери билета в базата");
+    }
+    
+    const now = new Date();
+    
+    // Обновяваме САМО необходимите полета
+    await updateDoc(eventRef, {
+      [`tickets.${correctKey}.checkedIn`]: true,
+      [`tickets.${correctKey}.checkedInTime`]: now
+    });
+    
+    // Презареждаме всички данни
+    await fetchEvents();
+    
+    // Обновяваме модала
+    setCheckTicketModalData(prev => prev ? {
+      ...prev,
+      checkedIn: true,
+      checkedInTime: now.toLocaleString('bg-BG')
+    } : null);
+    
+    setTicketStatusMessage("✅ Билетът е регистриран!");
+    setTicketStatusType("success");
+    
+  } catch (error) {
+    console.error("❌ Грешка:", error);
+    const errorMessage = error instanceof Error ? error.message : "Неизвестна грешка";
+    setTicketStatusMessage(`❌ ${errorMessage}`);
+    setTicketStatusType("error");
+  } finally {
+    setIsCheckingTicket(false);
+  }
+};
 
   const uncheckTicket = async () => {
     if (!checkTicketModalData) return;
@@ -1718,7 +1716,7 @@ console.log('events', updateMaxParticipants);
 
                 {todayStats.todayScannedTickets.length > 0 ? (
                   <div className="scanned-tickets-section">
-                    <h4>Билети за днешните събития ({todayStats.todayScannedTickets.length})</h4>
+                    <h4>Всички билети ({todayStats.todayScannedTickets.length})</h4>
                     <div className="scanned-tickets-list">
                       <table className="data-table">
                         <thead>
@@ -1761,12 +1759,12 @@ console.log('events', updateMaxParticipants);
                   </div>
                 ) : (
                   <div className="no-scanned-tickets">
-                    <div className="empty-state">
-                      <QrCode size={48} />
-                      <p>Няма билети за днешните събития</p>
-                      <p className="help-text">Днес няма събития или всички билети са за други дни</p>
-                    </div>
-                  </div>
+  <div className="empty-state">
+    <QrCode size={48} />
+    <p>Няма налични билети</p>
+    <p className="help-text">Все още няма билети за сканиране</p>
+  </div>
+</div>
                 )}
               </div>
             </div>
