@@ -3024,3 +3024,112 @@
   background: #fff3cd;
   color: #856404;
 }
+/* Ticket Options Grid */
+.ticket-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.ticket-option-card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.ticket-option-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  border-color: #4a6cf7;
+}
+
+.ticket-option-card .option-icon {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #4a6cf7, #6a8eff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: white;
+}
+
+.ticket-option-card h3 {
+  margin: 0 0 10px 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.ticket-option-card p {
+  color: #718096;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.ticket-option-card .option-btn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Ticket Header Buttons */
+.ticket-header-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Quick Stats Section */
+.quick-stats-section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-top: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.quick-stats-section h3 {
+  margin: 0 0 20px 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stats-grid .stat-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e9ecef;
+}
+
+.stats-grid .stat-label {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.stats-grid .stat-value {
+  color: #2d3748;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+/* Remove old styles if they exist */
+.ticket-check-container,
+.ticket-search-card,
+.qr-scanner-info,
+.ticket-details-card {
+  display: none;
+}
