@@ -2127,4 +2127,760 @@
     font-size: 16px; /* Prevents iOS zoom on focus */
   }
 }
+/* Добавете тези стилове в края на файла */
 
+/* Стилове за проверка на билети */
+.ticket-check-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ticket-search-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.ticket-search-card h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.qr-scanner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.ticket-status-message {
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.ticket-status-message.success {
+  background: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+}
+
+.ticket-status-message.error {
+  background: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
+}
+
+.ticket-status-message.info {
+  background: #cfe2ff;
+  color: #084298;
+  border: 1px solid #b6d4fe;
+}
+
+.ticket-details-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.ticket-details-card h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.ticket-main-info {
+  margin-bottom: 30px;
+}
+
+.ticket-id-display {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ticket-id-big {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #3498db;
+  background: #f8f9fa;
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 2px dashed #3498db;
+}
+
+.status-badge {
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.status-badge.checked {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.ticket-event-info {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.ticket-event-info h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+}
+
+.ticket-user-info p {
+  margin: 5px 0;
+  color: #495057;
+}
+
+.ticket-actions {
+  margin-top: 30px;
+}
+
+.large-btn {
+  padding: 15px 30px;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.tickets-stats {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  border-top: 4px solid #3498db;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  color: #6c757d;
+  margin-bottom: 10px;
+}
+
+.stat-value {
+  font-size: 2em;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* Стилове за модала за проверка на билети */
+.ticket-check-modal {
+  max-width: 600px;
+}
+
+.ticket-search-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-ticket-btn {
+  white-space: nowrap;
+}
+
+.ticket-details {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.ticket-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ticket-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .ticket-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ticket-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ticket-info-item strong {
+  color: #495057;
+  font-size: 0.9em;
+}
+
+.ticket-help-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.help-item ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.help-item li {
+  margin: 5px 0;
+  color: #6c757d;
+}
+
+.stats-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e9ecef;
+  border-radius: 8px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+}
+
+.status-text.checked {
+  color: #28a745;
+}
+
+.status-text.pending {
+  color: #ffc107;
+}
+
+/* QR Scanner Styles */
+.qr-scanner-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.scanner-instructions {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.scanner-instructions p {
+  margin: 10px 0 5px 0;
+  font-weight: 500;
+}
+
+.scanner-instructions small {
+  color: #666;
+  font-size: 14px;
+}
+
+.qr-reader-container {
+  max-width: 500px;
+  margin: 0 auto 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.scanner-actions {
+  margin-top: 20px;
+}
+
+.ticket-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.ticket-tab {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticket-tab:hover {
+  background: #f3f4f6;
+}
+
+.ticket-tab.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Ticket Check Modal Specific */
+.ticket-check-modal {
+  max-width: 800px;
+}
+
+.ticket-search-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-ticket-btn {
+  min-width: 120px;
+}
+
+.ticket-details {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #e5e7eb;
+}
+
+.ticket-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ticket-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ticket-status-badge.checked {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ticket-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ticket-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.ticket-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ticket-info-item strong {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ticket-id {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+.status-text.checked {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.status-text.pending {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.ticket-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.check-in-btn {
+  background: #10b981;
+}
+
+.check-in-btn:hover {
+  background: #059669;
+}
+
+.uncheck-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.uncheck-btn:hover {
+  background: #dc2626;
+}
+
+.ticket-help-section {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.help-item ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.help-item li {
+  margin-bottom: 5px;
+  color: #4b5563;
+}
+
+.stats-info {
+  margin-top: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+/* User Events Section in Users Table */
+.user-events-section {
+  max-width: 300px;
+}
+
+.user-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.event-title {
+  font-weight: 500;
+  color: #374151;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-date {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.no-events {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.more-events {
+  text-align: center;
+  color: #3b82f6;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.more-events:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ticket-tabs {
+    flex-direction: column;
+  }
+  
+  .ticket-search-section {
+    flex-direction: column;
+  }
+  
+  .search-ticket-btn {
+    width: 100%;
+  }
+  
+  .ticket-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .qr-reader-container {
+    max-width: 100%;
+  }
+}
+
+/* QR Scanner стилове */
+.qr-scanner-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticket-search-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.qr-scanner-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.qr-scanner-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.qr-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.qr-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 250px;
+  height: 250px;
+  border: 2px solid #4CAF50;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5);
+}
+
+.qr-instructions {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.camera-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.camera-error svg {
+  color: #f44336;
+  margin-bottom: 20px;
+}
+
+.camera-help {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 10px;
+}
+
+.retry-btn {
+  margin-top: 20px;
+}
+
+.qr-scanner-info {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.info-tip ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.info-tip li {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.manual-entry-option {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.manual-input-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.small-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.small-btn {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.ticket-action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.ticket-action-buttons .primary-btn {
+  flex: 1;
+}
+
+.ticket-action-buttons .qr-scanner-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .qr-scanner-container {
+    height: 250px;
+  }
+  
+  .qr-frame {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .qr-scanner-modal {
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .ticket-action-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .qr-scanner-container {
+    height: 200px;
+  }
+  
+  .qr-frame {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .ticket-search-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .qr-scanner-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -337,19 +337,35 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleEventRegistration = (event: Event) => {
-    if (!user) {
-      alert('Моля, влезте в профила си, за да се запишете за събитието!');
-      return;
-    }
+  // Промени тази функция в Home компонента
+const handleEventRegistration = (event: Event) => {
+  if (!user) {
+    // Ако не е логнат, води към логин страница с флаг за връщане към събития
+    navigate('/login', { 
+      state: { 
+        redirectTo: '/events',
+        message: 'Моля, влезте в профила си, за да се запишете за събитие.',
+        fromEventRegistration: true,
+        eventId: event.id // Запазваме ID на събитието за автоматично записване
+      }
+    });
+    return;
+  }
 
-    if (isEventFull(event)) {
-      alert('Събитието е пълно! Не можете да се запишете.');
-      return;
-    }
+  if (isEventFull(event)) {
+    alert('Събитието е пълно! Не можете да се запишете.');
+    return;
+  }
 
-    navigate('/dashboard');
-  };
+  // Ако е логнат, води към дашборда с флаг за автоматично записване
+  navigate('/dashboard', { 
+    state: { 
+      eventId: event.id,
+      action: 'register',
+      fromEventsPage: true
+    }
+  });
+};
 
   const handleViewEventDetails = (event: Event, index: number) => {
     const calendarDate = formatDateForCalendar(event.date);
@@ -876,22 +892,20 @@ const Home: React.FC = () => {
                       </div>
 
                       <button 
-                        className={`event-register-btn ${colorClass} ${
-                          !user || isEventFull(event) ? 'event-btn-disabled' : ''
-                        }`}
-                        disabled={!user || isEventFull(event)}
-                        onClick={() => handleEventRegistration(event)}
-                      >
-                        <span>
-                          {!user 
-                            ? 'Влезте, за да се запишете' 
-                            : isEventFull(event) 
-                              ? 'Събитието е пълно' 
-                              : 'Запиши се'
-                          }
-                        </span>
-                        {!isEventFull(event) && user && <ArrowRight className="register-icon" />}
-                      </button>
+  className={`event-register-btn ${colorClass} ${
+    isEventFull(event) ? 'event-btn-disabled' : ''
+  }`}
+  disabled={isEventFull(event)}
+  onClick={() => handleEventRegistration(event)}
+>
+  <span>
+    {isEventFull(event) 
+      ? 'Събитието е пълно' 
+      : 'Запиши се'
+    }
+  </span>
+  {!isEventFull(event) && <ArrowRight className="register-icon" />}
+</button>
                     </div>
                   </div>
                 </div>

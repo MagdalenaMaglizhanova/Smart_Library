@@ -3,6 +3,7 @@ import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 interface UserData {
+  displayName: string;
   uid: string;
   email: string;
   role: "admin" | "librarian" | "reader";
@@ -40,18 +41,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             : "reader";
 
           setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || "",
-            role,
-          });
+  uid: firebaseUser.uid,
+  email: firebaseUser.email || "",
+  displayName: firebaseUser.displayName || "", // <- добавено
+  role,
+});
+
         } catch (error) {
           console.error("Error fetching user data:", error);
           // fallback, ако има проблем с Firestore
           setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || "",
-            role: "reader",
-          });
+  uid: firebaseUser.uid,
+  email: firebaseUser.email || "",
+  displayName: firebaseUser.displayName || "",
+  role: "reader",
+});
         } finally {
           setLoading(false);
         }
