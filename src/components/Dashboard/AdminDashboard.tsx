@@ -1111,7 +1111,7 @@ const AdminDashboard: React.FC = () => {
     });
     fetchEvents();
   };
-
+console.log("events", toggleEventRole);
   const updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
     if (maxParticipants < 1) return;
     const event = events.find(e => e.id === eventId);
@@ -1128,6 +1128,7 @@ const AdminDashboard: React.FC = () => {
     });
     fetchEvents();
   };
+  console.log("events", updateMaxParticipants);
 
   const openCreateEventModal = () => {
     setModalMode('create');
