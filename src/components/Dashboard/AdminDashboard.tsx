@@ -391,16 +391,25 @@ const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
   const raw = detectedCodes[0].rawValue;
   if (!raw) return;
 
+  console.log("Raw QR value:", raw); // debug, можеш да го махнеш после
+
   let ticketId = raw;
 
-  // Ако е JSON, вземаме само TICKETID
   try {
-    const parsed = JSON.parse(raw);
+    // Първо парсваме JSON
+    let parsed = JSON.parse(raw);
+
+    // Ако е вторично сериализиран (string вътре), парсваме пак
+    if (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed);
+    }
+
+    // Ако има TICKETID, взимаме него
     if (parsed.TICKETID) {
       ticketId = parsed.TICKETID;
     }
   } catch {
-    // Ако не е JSON, оставяме raw като ticketId
+    // Ако не е JSON, оставяме raw
   }
 
   // Премахваме "TICKET-" в началото, за да избегнем дублиране
