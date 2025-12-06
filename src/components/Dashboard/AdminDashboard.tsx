@@ -390,7 +390,18 @@ const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
   const scannedValue = detectedCodes[0].rawValue;
   if (!scannedValue) return;
 
-  const ticketId = scannedValue.toUpperCase();
+  // Извличаме само TICKETID от JSON, ако QR кодът съдържа JSON
+  let ticketId = scannedValue.toUpperCase();
+  try {
+    const parsed = JSON.parse(scannedValue);
+    if (parsed.TICKETID) {
+      ticketId = parsed.TICKETID.toUpperCase();
+    }
+  } catch {
+    // Ако не е JSON, оставяме scannedValue както е
+  }
+
+  // Сетваме в полето само ticketId
   setTicketSearchTerm(ticketId);
   console.log("Сканиран ticketId:", ticketId);
 
@@ -416,6 +427,7 @@ const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
     setTicketStatusType("success");
     setShowQrScanner(false);
 
+    // Почистваме след 3 секунди
     setTimeout(() => setTicketStatusMessage(""), 3000);
   }
 };
