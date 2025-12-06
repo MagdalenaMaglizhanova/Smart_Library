@@ -6,6 +6,12 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import './AdminDashboard.css';
+import { Timestamp } from "firebase/firestore";
+
+const now = Timestamp.fromDate(new Date());
+
+console.log("Current Timestamp:", now);
+
 
 // Добавяме интерфейсите преди основния компонент
 interface ClassSchedule {
@@ -488,63 +494,66 @@ const AdminDashboard: React.FC = () => {
   };
 
   const checkInTicket = async () => {
-    if (!checkTicketModalData) return;
-    
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Регистриране...");
-      
-      const eventRef = doc(db, "events", checkTicketModalData.eventId);
-      const eventDoc = await getDoc(eventRef);
-      
-      if (!eventDoc.exists()) {
-        throw new Error("Събитието не е намерено");
-      }
-      
-      const eventData = eventDoc.data();
-      const tickets = eventData.tickets || {};
-      
-      let userIdToUpdate: string | null = null;
-      
-      for (const [userId, ticket] of Object.entries(tickets)) {
-        const ticketObj = ticket as Ticket;
-        if (ticketObj.ticketId === checkTicketModalData.ticketId) {
-          userIdToUpdate = userId;
-          break;
-        }
-      }
-      
-      if (!userIdToUpdate) {
-        throw new Error("Билетът не е намерен в базата данни");
-      }
-      
-      const now = new Date();
-      
-      await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: true,
-        [`tickets.${userIdToUpdate}.checkedInTime`]: now
-      });
-      
-      await fetchEvents();
-      
-      setCheckTicketModalData(prev => prev ? {
-        ...prev,
-        checkedIn: true,
-        checkedInTime: now.toLocaleString('bg-BG')
-      } : null);
-      
-      setTicketStatusMessage("✅ Билетът е регистриран!");
-      setTicketStatusType("success");
-      
-    } catch (error) {
-      console.error("❌ Грешка:", error);
-      const errorMessage = error instanceof Error ? error.message : "Неизвестна грешка";
-      setTicketStatusMessage(`❌ ${errorMessage}`);
-      setTicketStatusType("error");
-    } finally {
-      setIsCheckingTicket(false);
+  if (!checkTicketModalData) return;
+  
+  try {
+    setIsCheckingTicket(true);
+    setTicketStatusMessage("Регистриране...");
+
+    const eventRef = doc(db, "events", checkTicketModalData.eventId);
+    const eventDoc = await getDoc(eventRef);
+
+    if (!eventDoc.exists()) {
+      throw new Error("Събитието не е намерено");
     }
-  };
+
+    const eventData = eventDoc.data();
+    const tickets = eventData.tickets || {};
+
+    let userIdToUpdate: string | null = null;
+
+    for (const [userId, ticket] of Object.entries(tickets)) {
+      const ticketObj = ticket as Ticket;
+      if (ticketObj.ticketId === checkTicketModalData.ticketId) {
+        userIdToUpdate = userId;
+        break;
+      }
+    }
+
+    if (!userIdToUpdate) {
+      throw new Error("Билетът не е намерен в базата данни");
+    }
+
+    // ❗❗ Ето тук е Timestamp-а
+    const now = Timestamp.fromDate(new Date());
+
+    // ✔ Това е твоят обновен updateDoc
+    await updateDoc(eventRef, {
+      [`tickets.${userIdToUpdate}.checkedIn`]: true,
+      [`tickets.${userIdToUpdate}.checkedInTime`]: now
+    });
+
+    await fetchEvents();
+
+    setCheckTicketModalData(prev => prev ? {
+      ...prev,
+      checkedIn: true,
+      checkedInTime: now.toDate().toLocaleString('bg-BG')
+    } : null);
+
+    setTicketStatusMessage("✅ Билетът е регистриран!");
+    setTicketStatusType("success");
+
+  } catch (error) {
+    console.error("❌ Грешка:", error);
+    const errorMessage = error instanceof Error ? error.message : "Неизвестна грешка";
+    setTicketStatusMessage(`❌ ${errorMessage}`);
+    setTicketStatusType("error");
+  } finally {
+    setIsCheckingTicket(false);
+  }
+};
+
 
   const uncheckTicket = async () => {
     if (!checkTicketModalData) return;
