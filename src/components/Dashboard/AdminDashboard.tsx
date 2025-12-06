@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
-import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff } from "lucide-react";
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc} from "firebase/firestore";
+import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff, BarChart3 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Scanner } from '@yudiel/react-qr-scanner';
@@ -85,6 +85,7 @@ interface Event {
       ticketId: string;
       registrationDate: any;
       checkedIn: boolean;
+      checkedInTime?: any;
     }
   };
 }
@@ -99,6 +100,27 @@ interface CheckTicketModalData {
   userEmail: string;
   registrationDate: string;
   checkedIn: boolean;
+  checkedInTime?: string;
+}
+
+// НОВ: Интерфейс за статистика за днес
+interface TodayStats {
+  totalTickets: number;
+  checkedInTickets: number;
+  pendingTickets: number;
+  todayScannedTickets: TicketDetail[];
+}
+
+// НОВ: Интерфейс за детайли за сканиран билет
+interface TicketDetail {
+  ticketId: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  userName: string;
+  userEmail: string;
+  scanTime: string;
+  status: 'checked' | 'pending';
 }
 
 // Компонент за Toolbar на редактора
@@ -226,6 +248,15 @@ const AdminDashboard: React.FC = () => {
   const [ticketStatusMessage, setTicketStatusMessage] = useState<string>("");
   const [ticketStatusType, setTicketStatusType] = useState<"success" | "error" | "info">("info");
 
+  // НОВ: State за статистика за днес
+  const [showTodayStats, setShowTodayStats] = useState<boolean>(false);
+  const [todayStats, setTodayStats] = useState<TodayStats>({
+    totalTickets: 0,
+    checkedInTickets: 0,
+    pendingTickets: 0,
+    todayScannedTickets: []
+  });
+
   // TipTap редактор
   const editor = useEditor({
     extensions: [StarterKit],
@@ -245,6 +276,60 @@ const AdminDashboard: React.FC = () => {
       editor.commands.setContent(modalEventData.description || "");
     }
   }, [modalEventData.description, editor]);
+
+  // НОВ: Ефект за зареждане на статистиката за днес
+  useEffect(() => {
+    if (showTodayStats) {
+      loadTodayStats();
+    }
+  }, [showTodayStats, events]);
+
+  const loadTodayStats = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const scannedTickets: TicketDetail[] = [];
+    
+    let total = 0;
+    let checkedIn = 0;
+    let pending = 0;
+    
+    events.forEach(event => {
+      if (event.tickets) {
+        Object.entries(event.tickets).forEach(([userId, ticket]) => {
+          total++;
+          if (ticket.checkedIn) {
+            checkedIn++;
+            
+            // Проверяваме дали билетът е сканиран днес
+            const checkedInDate = ticket.checkedInTime?.toDate?.();
+            const ticketDate = checkedInDate ? checkedInDate.toISOString().split('T')[0] : '';
+            
+            if (ticketDate === today) {
+              const user = users.find(u => u.id === userId);
+              scannedTickets.push({
+                ticketId: ticket.ticketId,
+                eventTitle: event.title,
+                eventDate: event.date,
+                eventTime: event.time,
+                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
+                userEmail: user?.email || "Няма имейл",
+                scanTime: checkedInDate ? checkedInDate.toLocaleString('bg-BG') : "Днес",
+                status: 'checked'
+              });
+            }
+          } else {
+            pending++;
+          }
+        });
+      }
+    });
+    
+    setTodayStats({
+      totalTickets: total,
+      checkedInTickets: checkedIn,
+      pendingTickets: pending,
+      todayScannedTickets: scannedTickets
+    });
+  };
 
   const locationOptions = [
     "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
@@ -277,7 +362,10 @@ const AdminDashboard: React.FC = () => {
   const handleQrScan = (result: any) => {
     if (result && result.text) {
       setTicketSearchTerm(result.text);
+      // ПРОМЯНА: Затваряне на QR скенера и отваряне на проверка на билети
       setShowQrScanner(false);
+      setShowCheckTicketModal(true);
+      
       // Автоматично търсене след сканиране
       setTimeout(() => {
         searchTicket();
@@ -301,7 +389,7 @@ const AdminDashboard: React.FC = () => {
   const closeQrScanner = () => {
     setShowQrScanner(false);
     setCameraError('');
-    // Връщане към проверка на билети след затваряне на QR скенера
+    // ПРОМЯНА: Винаги отваряме проверка на билети след затваряне на QR скенера
     if (!showCheckTicketModal) {
       setShowCheckTicketModal(true);
     }
@@ -314,6 +402,7 @@ const AdminDashboard: React.FC = () => {
     setTicketSearchTerm("");
     setCheckTicketModalData(null);
     setTicketStatusMessage("");
+    setShowTodayStats(false); // Скриване на статистиката
   };
 
   const searchTicket = async () => {
@@ -369,7 +458,8 @@ const AdminDashboard: React.FC = () => {
         userName: user?.displayName || user?.firstName || "Неизвестен потребител",
         userEmail: user?.email || "Няма имейл",
         registrationDate: foundTicketData.registrationDate?.toDate?.().toLocaleString('bg-BG') || "Неизвестна дата",
-        checkedIn: foundTicketData.checkedIn || false
+        checkedIn: foundTicketData.checkedIn || false,
+        checkedInTime: foundTicketData.checkedInTime?.toDate?.().toLocaleString('bg-BG')
       });
 
       setTicketStatusMessage("");
@@ -412,9 +502,11 @@ const AdminDashboard: React.FC = () => {
         throw new Error("Не може да се намери потребител за билета");
       }
 
+      const now = new Date();
       // Обновяваме билета в Firestore
       await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: true
+        [`tickets.${userIdToUpdate}.checkedIn`]: true,
+        [`tickets.${userIdToUpdate}.checkedInTime`]: now
       });
 
       // Обновяваме локалното състояние
@@ -425,7 +517,8 @@ const AdminDashboard: React.FC = () => {
             if (updatedTickets[userIdToUpdate]) {
               updatedTickets[userIdToUpdate] = { 
                 ...updatedTickets[userIdToUpdate], 
-                checkedIn: true 
+                checkedIn: true,
+                checkedInTime: now 
               };
             }
             return { ...event, tickets: updatedTickets };
@@ -435,10 +528,17 @@ const AdminDashboard: React.FC = () => {
       );
 
       // Обновяваме модалните данни
-      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: true } : null);
+      setCheckTicketModalData(prev => prev ? { 
+        ...prev, 
+        checkedIn: true,
+        checkedInTime: now.toLocaleString('bg-BG')
+      } : null);
       
       setTicketStatusMessage("Билетът е успешно регистриран!");
       setTicketStatusType("success");
+      
+      // Обновяваме статистиката
+      loadTodayStats();
       
       setTimeout(() => {
         setTicketStatusMessage("");
@@ -481,7 +581,8 @@ const AdminDashboard: React.FC = () => {
 
       // Обновяваме билета в Firestore
       await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: false
+        [`tickets.${userIdToUpdate}.checkedIn`]: false,
+        [`tickets.${userIdToUpdate}.checkedInTime`]: null
       });
 
       // Обновяваме локалното състояние
@@ -492,7 +593,8 @@ const AdminDashboard: React.FC = () => {
             if (updatedTickets[userIdToUpdate]) {
               updatedTickets[userIdToUpdate] = { 
                 ...updatedTickets[userIdToUpdate], 
-                checkedIn: false 
+                checkedIn: false,
+                checkedInTime: null 
               };
             }
             return { ...event, tickets: updatedTickets };
@@ -502,10 +604,17 @@ const AdminDashboard: React.FC = () => {
       );
 
       // Обновяваме модалните данни
-      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: false } : null);
+      setCheckTicketModalData(prev => prev ? { 
+        ...prev, 
+        checkedIn: false,
+        checkedInTime: undefined 
+      } : null);
       
       setTicketStatusMessage("Регистрацията е отменена!");
       setTicketStatusType("success");
+      
+      // Обновяваме статистиката
+      loadTodayStats();
       
       setTimeout(() => {
         setTicketStatusMessage("");
@@ -518,6 +627,12 @@ const AdminDashboard: React.FC = () => {
     } finally {
       setIsCheckingTicket(false);
     }
+  };
+
+  // НОВ: Функция за показване на статистиката за днес
+  const openTodayStats = () => {
+    setShowTodayStats(true);
+    loadTodayStats();
   };
 
   // Оригинални функции
@@ -1025,7 +1140,7 @@ console.log('events', toggleEventRole);
     });
     fetchEvents();
   };
-console.log('part', updateMaxParticipants);
+console.log('events', updateMaxParticipants);
   // Функции за управление на модала
   const openCreateEventModal = () => {
     setModalMode('create');
@@ -1351,17 +1466,26 @@ console.log('part', updateMaxParticipants);
         )}
 
         {/* Модал за проверка на билети - САМО КОГАТО QR СКЕНЕРЪТ НЕ Е АКТИВЕН */}
-        {showCheckTicketModal && !showQrScanner && (
+        {showCheckTicketModal && !showQrScanner && !showTodayStats && (
           <div className="modal-overlay">
             <div className="modal-content ticket-check-modal">
               <div className="modal-header">
                 <h3>Проверка на билети</h3>
-                <button 
-                  onClick={() => setShowCheckTicketModal(false)}
-                  className="close-btn"
-                >
-                  <X size={20} />
-                </button>
+                <div className="modal-header-actions">
+                  <button
+                    onClick={openTodayStats}
+                    className="stats-btn primary-btn"
+                  >
+                    <BarChart3 size={18} />
+                    Статистика за днес
+                  </button>
+                  <button 
+                    onClick={() => setShowCheckTicketModal(false)}
+                    className="close-btn"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
               
               <div className="modal-body">
@@ -1447,6 +1571,13 @@ console.log('part', updateMaxParticipants);
                         <span>{checkTicketModalData.registrationDate}</span>
                       </div>
                       
+                      {checkTicketModalData.checkedInTime && (
+                        <div className="ticket-info-item">
+                          <strong>Регистриран на:</strong>
+                          <span>{checkTicketModalData.checkedInTime}</span>
+                        </div>
+                      )}
+                      
                       <div className="ticket-info-item">
                         <strong>Статус:</strong>
                         <span className={`status-text ${checkTicketModalData.checkedIn ? 'checked' : 'pending'}`}>
@@ -1489,32 +1620,121 @@ console.log('part', updateMaxParticipants);
                       <li>При необходимост можете да отмените регистрацията</li>
                     </ul>
                   </div>
-                  
-                  <div className="stats-info">
-                    <strong>Статистика за днес:</strong>
-                    <div className="stats-grid">
-                      <div className="stat-item">
-                        <span className="stat-label">Общо билети:</span>
-                        <span className="stat-value">
-                          {events.reduce((total, event) => 
-                            total + (event.tickets ? Object.keys(event.tickets).length : 0), 0
-                          )}
-                        </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* НОВ: Модал за статистика за днес */}
+        {showTodayStats && !showQrScanner && (
+          <div className="modal-overlay">
+            <div className="modal-content ticket-check-modal">
+              <div className="modal-header">
+                <h3>Статистика за днес</h3>
+                <div className="modal-header-actions">
+                  <button 
+                    onClick={() => {
+                      setShowTodayStats(false);
+                      setShowCheckTicketModal(true);
+                    }}
+                    className="secondary-btn"
+                  >
+                    Назад към проверка
+                  </button>
+                  <button 
+                    onClick={() => setShowTodayStats(false)}
+                    className="close-btn"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="modal-body">
+                <div className="today-stats-overview">
+                  <h4>Преглед на билетите за днес ({new Date().toLocaleDateString('bg-BG')})</h4>
+                  <div className="stats-cards">
+                    <div className="stat-card">
+                      <div className="stat-icon">
+                        <BarChart3 size={24} />
                       </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Регистрирани днес:</span>
-                        <span className="stat-value">
-                          {events.reduce((total, event) => {
-                            if (!event.tickets) return total;
-                            return total + Object.values(event.tickets).filter(ticket => 
-                              ticket.checkedIn
-                            ).length;
-                          }, 0)}
-                        </span>
+                      <div className="stat-info">
+                        <div className="stat-value">{todayStats.totalTickets}</div>
+                        <div className="stat-label">Общо билети</div>
+                      </div>
+                    </div>
+                    <div className="stat-card success">
+                      <div className="stat-icon">
+                        <Check size={24} />
+                      </div>
+                      <div className="stat-info">
+                        <div className="stat-value">{todayStats.checkedInTickets}</div>
+                        <div className="stat-label">Регистрирани</div>
+                      </div>
+                    </div>
+                    <div className="stat-card warning">
+                      <div className="stat-icon">
+                        <Clock size={24} />
+                      </div>
+                      <div className="stat-info">
+                        <div className="stat-value">{todayStats.pendingTickets}</div>
+                        <div className="stat-label">Чакащи</div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {todayStats.todayScannedTickets.length > 0 ? (
+                  <div className="scanned-tickets-section">
+                    <h4>Сканирани билети днес ({todayStats.todayScannedTickets.length})</h4>
+                    <div className="scanned-tickets-list">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Билет №</th>
+                            <th>Събитие</th>
+                            <th>Потребител</th>
+                            <th>Имейл</th>
+                            <th>Час на сканиране</th>
+                            <th>Статус</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {todayStats.todayScannedTickets.map((ticket, index) => (
+                            <tr key={index}>
+                              <td className="ticket-id-cell">
+                                <span className="ticket-id-small">{ticket.ticketId}</span>
+                              </td>
+                              <td>
+                                <div className="event-info">
+                                  <div className="event-title">{ticket.eventTitle}</div>
+                                  <div className="event-time">{ticket.eventDate} {ticket.eventTime}</div>
+                                </div>
+                              </td>
+                              <td>{ticket.userName}</td>
+                              <td>{ticket.userEmail}</td>
+                              <td>{ticket.scanTime}</td>
+                              <td>
+                                <span className={`status-badge ${ticket.status}`}>
+                                  {ticket.status === 'checked' ? 'Регистриран' : 'Чака'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="no-scanned-tickets">
+                    <div className="empty-state">
+                      <QrCode size={48} />
+                      <p>Все още няма сканирани билети днес</p>
+                      <p className="help-text">Сканирайте първия билет, за да започнете статистиката за днес</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2476,12 +2696,12 @@ console.log('part', updateMaxParticipants);
                   </button>
                   
                   <button
-                    onClick={openQrScanner}
+                    onClick={openCheckTicketModal}
                     className="primary-btn qr-scanner-btn"
                     title="Сканирай QR код"
                   >
                     <QrCode size={18} />
-                    Сканирай QR
+                    Отвори проверка
                   </button>
                 </div>
                 
@@ -2521,6 +2741,9 @@ console.log('part', updateMaxParticipants);
                         <p><strong>Посетител:</strong> {checkTicketModalData.userName}</p>
                         <p><strong>Имейл:</strong> {checkTicketModalData.userEmail}</p>
                         <p><strong>Регистриран на:</strong> {checkTicketModalData.registrationDate}</p>
+                        {checkTicketModalData.checkedInTime && (
+                          <p><strong>Сканиран на:</strong> {checkTicketModalData.checkedInTime}</p>
+                        )}
                       </div>
                     </div>
                     
