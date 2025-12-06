@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc} from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
 import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff, BarChart3 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -318,9 +318,32 @@ const AdminDashboard: React.FC = () => {
             }
           } else {
             pending++;
+            
+            // ДОБАВЯМЕ: Показваме и несканирани билети за днешните събития
+            const eventDate = event.date;
+            if (eventDate === today) {
+              const user = users.find(u => u.id === userId);
+              scannedTickets.push({
+                ticketId: ticket.ticketId,
+                eventTitle: event.title,
+                eventDate: event.date,
+                eventTime: event.time,
+                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
+                userEmail: user?.email || "Няма имейл",
+                scanTime: "Очаква сканиране",
+                status: 'pending'
+              });
+            }
           }
         });
       }
+    });
+    
+    // Сортираме по време на сканиране (новите най-отгоре)
+    scannedTickets.sort((a, b) => {
+      if (a.scanTime === "Очаква сканиране" && b.scanTime !== "Очаква сканиране") return 1;
+      if (b.scanTime === "Очаква сканиране" && a.scanTime !== "Очаква сканиране") return -1;
+      return 0;
     });
     
     setTodayStats({
@@ -358,18 +381,23 @@ const AdminDashboard: React.FC = () => {
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
-  // Функции за QR Scanner
+  // Функции за QR Scanner - ПРОМЕНЕНИ!
   const handleQrScan = (result: any) => {
     if (result && result.text) {
-      setTicketSearchTerm(result.text);
-      // ПРОМЯНА: Затваряне на QR скенера и отваряне на проверка на билети
+      const ticketId = result.text.trim().toUpperCase();
+      console.log("Сканиран QR код:", ticketId);
+      
+      // Затваряме QR скенера ВЕДНАГА
       setShowQrScanner(false);
+      
+      // Задаваме номера на билета
+      setTicketSearchTerm(ticketId);
+      
+      // Отваряме модала за проверка на билети
       setShowCheckTicketModal(true);
       
-      // Автоматично търсене след сканиране
-      setTimeout(() => {
-        searchTicket();
-      }, 500);
+      // Извикваме searchTicket ВЕДНАГА
+      searchTicket(ticketId);
     }
   };
 
@@ -395,7 +423,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Функции за проверка на билети
+  // Функции за проверка на билети - ПРОМЕНЕНИ!
   const openCheckTicketModal = () => {
     setShowCheckTicketModal(true);
     setShowQrScanner(false); // Уверете се, че QR скенерът е затворен
@@ -405,8 +433,10 @@ const AdminDashboard: React.FC = () => {
     setShowTodayStats(false); // Скриване на статистиката
   };
 
-  const searchTicket = async () => {
-    if (!ticketSearchTerm.trim()) {
+  const searchTicket = async (ticketIdParam?: string) => {
+    const ticketToSearch = ticketIdParam || ticketSearchTerm;
+    
+    if (!ticketToSearch.trim()) {
       setTicketStatusMessage("Моля, въведете номер на билет!");
       setTicketStatusType("error");
       return;
@@ -417,7 +447,7 @@ const AdminDashboard: React.FC = () => {
       setTicketStatusMessage("Търсене на билет...");
       setTicketStatusType("info");
 
-      const ticketId = ticketSearchTerm.trim().toUpperCase();
+      const ticketId = ticketToSearch.trim().toUpperCase();
       console.log("Търсим билет с ID:", ticketId);
 
       // Търсим билет във всички събития
@@ -632,6 +662,7 @@ const AdminDashboard: React.FC = () => {
   // НОВ: Функция за показване на статистиката за днес
   const openTodayStats = () => {
     setShowTodayStats(true);
+    setShowCheckTicketModal(false);
     loadTodayStats();
   };
 
@@ -1505,7 +1536,7 @@ console.log('events', updateMaxParticipants);
                   
                   <div className="ticket-search-buttons">
                     <button
-                      onClick={searchTicket}
+                      onClick={() => searchTicket()}
                       disabled={isCheckingTicket || !ticketSearchTerm.trim()}
                       className="primary-btn search-ticket-btn"
                     >
@@ -1631,7 +1662,7 @@ console.log('events', updateMaxParticipants);
           <div className="modal-overlay">
             <div className="modal-content ticket-check-modal">
               <div className="modal-header">
-                <h3>Статистика за днес</h3>
+                <h3>Статистика за днес ({new Date().toLocaleDateString('bg-BG')})</h3>
                 <div className="modal-header-actions">
                   <button 
                     onClick={() => {
@@ -1653,7 +1684,7 @@ console.log('events', updateMaxParticipants);
               
               <div className="modal-body">
                 <div className="today-stats-overview">
-                  <h4>Преглед на билетите за днес ({new Date().toLocaleDateString('bg-BG')})</h4>
+                  <h4>Преглед на билетите</h4>
                   <div className="stats-cards">
                     <div className="stat-card">
                       <div className="stat-icon">
@@ -1687,7 +1718,7 @@ console.log('events', updateMaxParticipants);
 
                 {todayStats.todayScannedTickets.length > 0 ? (
                   <div className="scanned-tickets-section">
-                    <h4>Сканирани билети днес ({todayStats.todayScannedTickets.length})</h4>
+                    <h4>Билети за днешните събития ({todayStats.todayScannedTickets.length})</h4>
                     <div className="scanned-tickets-list">
                       <table className="data-table">
                         <thead>
@@ -1696,8 +1727,8 @@ console.log('events', updateMaxParticipants);
                             <th>Събитие</th>
                             <th>Потребител</th>
                             <th>Имейл</th>
-                            <th>Час на сканиране</th>
                             <th>Статус</th>
+                            <th>Информация</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1714,11 +1745,13 @@ console.log('events', updateMaxParticipants);
                               </td>
                               <td>{ticket.userName}</td>
                               <td>{ticket.userEmail}</td>
-                              <td>{ticket.scanTime}</td>
                               <td>
                                 <span className={`status-badge ${ticket.status}`}>
-                                  {ticket.status === 'checked' ? 'Регистриран' : 'Чака'}
+                                  {ticket.status === 'checked' ? 'Регистриран' : 'Очаква сканиране'}
                                 </span>
+                              </td>
+                              <td>
+                                {ticket.scanTime}
                               </td>
                             </tr>
                           ))}
@@ -1730,8 +1763,8 @@ console.log('events', updateMaxParticipants);
                   <div className="no-scanned-tickets">
                     <div className="empty-state">
                       <QrCode size={48} />
-                      <p>Все още няма сканирани билети днес</p>
-                      <p className="help-text">Сканирайте първия билет, за да започнете статистиката за днес</p>
+                      <p>Няма билети за днешните събития</p>
+                      <p className="help-text">Днес няма събития или всички билети са за други дни</p>
                     </div>
                   </div>
                 )}
@@ -2688,7 +2721,7 @@ console.log('events', updateMaxParticipants);
                 
                 <div className="ticket-action-buttons">
                   <button
-                    onClick={searchTicket}
+                    onClick={() => searchTicket()}
                     disabled={isCheckingTicket || !ticketSearchTerm.trim()}
                     className="primary-btn"
                   >
