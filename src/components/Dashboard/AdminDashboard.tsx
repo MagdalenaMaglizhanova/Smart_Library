@@ -434,6 +434,7 @@ const handleQrError = (error: any) => {
 const openQrScanner = () => {
   setShowQrScanner(true);
   setShowCheckTicketModal(false);
+  setShowTodayStats(false);
   setCameraError("");
   setTicketStatusMessage("");
   setCheckTicketModalData(null);
@@ -448,10 +449,10 @@ const closeQrScanner = () => {
 const openCheckTicketModal = () => {
   setShowCheckTicketModal(true);
   setShowQrScanner(false);
+  setShowTodayStats(false);
   setTicketSearchTerm("");
   setCheckTicketModalData(null);
   setTicketStatusMessage("");
-  setShowTodayStats(false);
 };
 
 // ----------- searchTicket -----------
@@ -1406,7 +1407,9 @@ console.log("events", toggleEventRole);
     className={`tab-button ${activeTab === "tickets" ? "active" : ""}`}
     onClick={() => {
       setActiveTab("tickets");
-      openQrScanner(); // стартира директно QR скенера
+      setShowQrScanner(false); // Не отваря директно QR сканера
+      setShowCheckTicketModal(false); // Не отваря и модала
+      setShowTodayStats(false); // Не отваря и статистиката
     }}
   >
     <QrCode size={18} />
@@ -2702,112 +2705,102 @@ console.log("events", toggleEventRole);
         )}
 
         {activeTab === "tickets" && (
-          <div className="content-section">
-            <div className="tickets-header">
-              <h2>Проверка на Билети</h2>
-              <p>Използвайте тази секция за сканиране и проверка на билети от посетители</p>
-            </div>
-            
-            <div className="ticket-check-container">
-              <div className="ticket-search-card">
-                <h3>Проверете билет</h3>
-                <div className="search-box">
-                  <Search className="search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Въведете номер на билет (TICKET-XXXX)..."
-                    value={ticketSearchTerm}
-                    onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                    onKeyPress={(e) => e.key === 'Enter' && searchTicket()}
-                    className="search-input"
-                  />
-                </div>
-                
-                <div className="ticket-action-buttons">
-                  <button
-                    onClick={() => searchTicket()}
-                    disabled={isCheckingTicket || !ticketSearchTerm.trim()}
-                    className="primary-btn"
-                  >
-                    {isCheckingTicket ? 'Търсене...' : 'Провери билет'}
-                  </button>
-                  
-                  <button
-                    onClick={openCheckTicketModal}
-                    className="primary-btn qr-scanner-btn"
-                    title="Сканирай QR код"
-                  >
-                    <QrCode size={18} />
-                    Отвори проверка
-                  </button>
-                </div>
-                
-                <div className="qr-scanner-info">
-                  <QrCode size={24} />
-                  <p>Или сканирайте QR кода от билета на посетителя</p>
-                </div>
-              </div>
-              
-              {ticketStatusMessage && (
-                <div className={`ticket-status-message ${ticketStatusType}`}>
-                  {ticketStatusType === 'success' && <Check size={16} />}
-                  {ticketStatusType === 'error' && <XCircle size={16} />}
-                  {ticketStatusMessage}
-                </div>
-              )}
-              
-              {checkTicketModalData && (
-                <div className="ticket-details-card">
-                  <h3>Информация за билета</h3>
-                  <div className="ticket-details-content">
-                    <div className="ticket-main-info">
-                      <div className="ticket-id-display">
-                        <strong>Билет №:</strong>
-                        <span className="ticket-id-big">{checkTicketModalData.ticketId}</span>
-                        <span className={`status-badge ${checkTicketModalData.checkedIn ? 'checked' : 'pending'}`}>
-                          {checkTicketModalData.checkedIn ? 'Регистриран' : 'Чака регистрация'}
-                        </span>
-                      </div>
-                      
-                      <div className="ticket-event-info">
-                        <h4>{checkTicketModalData.eventTitle}</h4>
-                        <p>{checkTicketModalData.eventDate} | {checkTicketModalData.eventTime}</p>
-                      </div>
-                      
-                      <div className="ticket-user-info">
-                        <p><strong>Посетител:</strong> {checkTicketModalData.userName}</p>
-                        <p><strong>Имейл:</strong> {checkTicketModalData.userEmail}</p>
-                        <p><strong>Регистриран на:</strong> {checkTicketModalData.registrationDate}</p>
-                        {checkTicketModalData.checkedInTime && (
-                          <p><strong>Сканиран на:</strong> {checkTicketModalData.checkedInTime}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="ticket-actions">
-                      {!checkTicketModalData.checkedIn ? (
-                        <button
-                          onClick={checkInTicket}
-                          disabled={isCheckingTicket}
-                          className="primary-btn large-btn"
-                        >
-                          <Check size={20} />
-                          Регистрирай посетител
-                        </button>
-                      ) : (
-                        <button
-                          onClick={uncheckTicket}
-                          disabled={isCheckingTicket}
-                          className="secondary-btn large-btn"
-                        >
-                          <XCircle size={20} />
-                          Отмени регистрация
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className="content-section">
+    <div className="tickets-header">
+      <h2>Проверка на Билети</h2>
+      <p>Използвайте тази секция за сканиране и проверка на билети от посетители</p>
+      
+      <div className="ticket-header-buttons">
+        <button 
+          onClick={openQrScanner}
+          className="primary-btn"
+        >
+          <QrCode size={18} />
+          Сканирай QR код
+        </button>
+        
+        <button 
+          onClick={openTodayStats}
+          className="secondary-btn"
+        >
+          <BarChart3 size={18} />
+          Статистика за днес
+        </button>
+      </div>
+    </div>
+    
+    <div className="ticket-options-grid">
+      <div className="ticket-option-card" onClick={openCheckTicketModal}>
+        <div className="option-icon">
+          <Search size={32} />
+        </div>
+        <h3>Ръчно търсене</h3>
+        <p>Въведете номер на билет или сканирайте QR код</p>
+        <button className="primary-btn option-btn">
+          Отвори проверка
+        </button>
+      </div>
+      
+      <div className="ticket-option-card" onClick={openQrScanner}>
+        <div className="option-icon">
+          <QrCode size={32} />
+        </div>
+        <h3>Директно сканиране</h3>
+        <p>Директно сканиране на QR код от билет</p>
+        <button className="primary-btn option-btn">
+          Отвори сканер
+        </button>
+      </div>
+      
+      <div className="ticket-option-card" onClick={openTodayStats}>
+        <div className="option-icon">
+          <BarChart3 size={32} />
+        </div>
+        <h3>Статистика</h3>
+        <p>Преглед на регистрираните посетители за днес</p>
+        <button className="secondary-btn option-btn">
+          Виж статистика
+        </button>
+      </div>
+    </div>
+    
+    <div className="quick-stats-section">
+      <h3>Бърза статистика</h3>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Общо билети</div>
+          <div className="stat-value">
+            {events.reduce((total, event) => 
+              total + (event.tickets ? Object.keys(event.tickets).length : 0), 0
+            )}
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Регистрирани</div>
+          <div className="stat-value">
+            {events.reduce((total, event) => {
+              if (!event.tickets) return total;
+              return total + Object.values(event.tickets).filter(ticket => 
+                ticket.checkedIn
+              ).length;
+            }, 0)}
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Очакващи</div>
+          <div className="stat-value">
+            {events.reduce((total, event) => {
+              if (!event.tickets) return total;
+              return total + Object.values(event.tickets).filter(ticket => 
+                !ticket.checkedIn
+              ).length;
+            }, 0)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
               
               <div className="tickets-stats">
                 <h3>Статистика</h3>
@@ -2847,9 +2840,6 @@ console.log("events", toggleEventRole);
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
+
 
 export default AdminDashboard;
