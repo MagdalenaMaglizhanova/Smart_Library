@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc  } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc, Timestamp} from "firebase/firestore";
 import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff, BarChart3 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
 import './AdminDashboard.css';
-import { Timestamp } from "firebase/firestore";
 
 const now = Timestamp.fromDate(new Date());
 
@@ -225,7 +225,8 @@ const AdminDashboard: React.FC = () => {
   const [cellEventOrganizer, setCellEventOrganizer] = useState<string>("");
 
   const [showQrScanner, setShowQrScanner] = useState<boolean>(false);
-  const [cameraError, setCameraError] = useState<string>('');
+const [cameraError, setCameraError] = useState<string>('');
+
 
   const [showEventModal, setShowEventModal] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -246,7 +247,7 @@ const AdminDashboard: React.FC = () => {
   const [checkTicketModalData, setCheckTicketModalData] = useState<CheckTicketModalData | null>(null);
   const [isCheckingTicket, setIsCheckingTicket] = useState<boolean>(false);
   const [ticketStatusMessage, setTicketStatusMessage] = useState<string>("");
-  const [ticketStatusType, setTicketStatusType] = useState<"success" | "error" | "info">("info");
+  const [ticketStatusType, setTicketStatusType] = useState<"success" | "error" | "info" | "warning">("info");
 
   const [showTodayStats, setShowTodayStats] = useState<boolean>(false);
   const [todayStats, setTodayStats] = useState<TodayStats>({
@@ -382,120 +383,146 @@ const AdminDashboard: React.FC = () => {
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
-  const handleQrScan = (result: any) => {
-    if (result && result.text) {
-      const ticketId = result.text.trim().toUpperCase();
-      console.log("Сканиран QR код:", ticketId);
-      
-      setShowQrScanner(false);
-      setTicketSearchTerm(ticketId);
-      setShowCheckTicketModal(true);
-      searchTicket(ticketId);
-    }
-  };
+// ----------- handle QR scan -----------
+const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
+  if (!detectedCodes || detectedCodes.length === 0) return;
 
-  const handleQrError = (error: any) => {
-    console.error("QR Scanner error:", error);
-    setCameraError("Неуспешно зареждане на камерата. Моля, проверете разрешенията.");
-  };
+  const scannedValue = detectedCodes[0].rawValue;
+  if (!scannedValue) return;
 
-  const openQrScanner = () => {
-    setShowQrScanner(true);
-    setShowCheckTicketModal(false);
-    setCameraError('');
-    setTicketStatusMessage('');
-    setCheckTicketModalData(null);
-  };
+  const ticketId = scannedValue.toUpperCase();
+  setTicketSearchTerm(ticketId);
+  console.log("Сканиран ticketId:", ticketId);
 
-  const closeQrScanner = () => {
+  // 1. Търсим билета
+  const ticketFound = await searchTicket(ticketId);
+  if (!ticketFound) {
+    setTicketStatusMessage("❌ Билетът не е намерен!");
+    setTicketStatusType("error");
+    return;
+  }
+
+  // Проверка дали билетът вече е регистриран
+  if (checkTicketModalData?.checkedIn) {
+    setTicketStatusMessage("⚠️ Билетът вече е регистриран!");
+    setTicketStatusType("warning");
+    return;
+  }
+
+  // 2. Сканиране / check-in само ако билетът е намерен и не е регистриран
+  const success = await checkInTicket();
+  if (success) {
+    setTicketStatusMessage("✅ Билетът е успешно сканиран и регистриран!");
+    setTicketStatusType("success");
     setShowQrScanner(false);
-    setCameraError('');
-    if (!showCheckTicketModal) {
-      setShowCheckTicketModal(true);
-    }
-  };
 
-  const openCheckTicketModal = () => {
-    setShowCheckTicketModal(true);
-    setShowQrScanner(false);
-    setTicketSearchTerm("");
-    setCheckTicketModalData(null);
-    setTicketStatusMessage("");
-    setShowTodayStats(false);
-  };
+    setTimeout(() => setTicketStatusMessage(""), 3000);
+  }
+};
 
-  const searchTicket = async (ticketIdParam?: string) => {
-    const ticketToSearch = ticketIdParam || ticketSearchTerm;
-    
-    if (!ticketToSearch.trim()) {
-      setTicketStatusMessage("Моля, въведете номер на билет!");
-      setTicketStatusType("error");
-      return;
-    }
+// ----------- handle QR error -----------
+const handleQrError = (error: any) => {
+  console.error("QR Scanner error:", error);
+  setCameraError(
+    "Неуспешно зареждане на камерата. Моля, проверете разрешенията."
+  );
+};
 
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Търсене на билет...");
-      setTicketStatusType("info");
+// ----------- QR scanner модал функции -----------
+const openQrScanner = () => {
+  setShowQrScanner(true);
+  setShowCheckTicketModal(false);
+  setCameraError("");
+  setTicketStatusMessage("");
+  setCheckTicketModalData(null);
+};
 
-      const ticketId = ticketToSearch.trim().toUpperCase();
-      console.log("Търсим билет с ID:", ticketId);
+const closeQrScanner = () => {
+  setShowQrScanner(false);
+  setCameraError("");
+  if (!showCheckTicketModal) setShowCheckTicketModal(true);
+};
 
-      let foundEvent: Event | null = null;
-      let foundUserId: string | null = null;
-      let foundTicketData: Ticket | null = null;
+const openCheckTicketModal = () => {
+  setShowCheckTicketModal(true);
+  setShowQrScanner(false);
+  setTicketSearchTerm("");
+  setCheckTicketModalData(null);
+  setTicketStatusMessage("");
+  setShowTodayStats(false);
+};
 
-      for (const event of events) {
-        if (event.tickets) {
-          for (const [userId, ticket] of Object.entries(event.tickets)) {
-            if (ticket.ticketId === ticketId) {
-              foundEvent = event;
-              foundUserId = userId;
-              foundTicketData = ticket;
-              break;
-            }
+// ----------- searchTicket -----------
+const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
+  const ticketToSearch = ticketIdParam || ticketSearchTerm;
+
+  if (!ticketToSearch.trim()) {
+    setTicketStatusMessage("Моля, въведете номер на билет!");
+    setTicketStatusType("error");
+    return false;
+  }
+
+  try {
+    setIsCheckingTicket(true);
+    setTicketStatusMessage("Търсене на билет...");
+    setTicketStatusType("info");
+
+    const ticketId = ticketToSearch.trim().toUpperCase();
+    console.log("Търсим билет с ID:", ticketId);
+
+    let foundEvent: Event | null = null;
+    let foundUserId: string | null = null;
+    let foundTicketData: Ticket | null = null;
+
+    for (const event of events) {
+      if (event.tickets) {
+        for (const [userId, ticket] of Object.entries(event.tickets)) {
+          if ((ticket as Ticket).ticketId === ticketId) {
+            foundEvent = event;
+            foundUserId = userId;
+            foundTicketData = ticket as Ticket;
+            break;
           }
-          if (foundEvent) break;
         }
+        if (foundEvent) break;
       }
-
-      if (!foundEvent || !foundUserId || !foundTicketData) {
-        setTicketStatusMessage("Билетът не е намерен!");
-        setTicketStatusType("error");
-        setIsCheckingTicket(false);
-        return;
-      }
-
-      const user = users.find(u => u.id === foundUserId);
-      
-      setCheckTicketModalData({
-        eventId: foundEvent.id,
-        eventTitle: foundEvent.title,
-        eventDate: foundEvent.date,
-        eventTime: foundEvent.time,
-        ticketId: foundTicketData.ticketId,
-        userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-        userEmail: user?.email || "Няма имейл",
-        registrationDate: foundTicketData.registrationDate?.toDate?.().toLocaleString('bg-BG') || "Неизвестна дата",
-        checkedIn: foundTicketData.checkedIn || false,
-        checkedInTime: foundTicketData.checkedInTime?.toDate?.().toLocaleString('bg-BG')
-      });
-
-      setTicketStatusMessage("");
-      setIsCheckingTicket(false);
-      setShowCheckTicketModal(true);
-
-    } catch (error) {
-      console.error("Грешка при търсене на билет:", error);
-      setTicketStatusMessage("Възникна грешка при търсенето!");
-      setTicketStatusType("error");
-      setIsCheckingTicket(false);
     }
-  };
 
-  const checkInTicket = async () => {
-  if (!checkTicketModalData) return;
-  
+    if (!foundEvent || !foundUserId || !foundTicketData) return false;
+
+    const user = users.find(u => u.id === foundUserId);
+
+    setCheckTicketModalData({
+      eventId: foundEvent.id,
+      eventTitle: foundEvent.title,
+      eventDate: foundEvent.date,
+      eventTime: foundEvent.time,
+      ticketId: foundTicketData.ticketId,
+      userName: user?.displayName || user?.firstName || "Неизвестен потребител",
+      userEmail: user?.email || "Няма имейл",
+      registrationDate:
+        foundTicketData.registrationDate?.toDate?.().toLocaleString("bg-BG") ||
+        "Неизвестна дата",
+      checkedIn: foundTicketData.checkedIn || false,
+      checkedInTime: foundTicketData.checkedInTime?.toDate?.().toLocaleString("bg-BG"),
+    });
+
+    setShowCheckTicketModal(true);
+    return true;
+  } catch (error) {
+    console.error("Грешка при търсене на билет:", error);
+    setTicketStatusMessage("Възникна грешка при търсенето!");
+    setTicketStatusType("error");
+    return false;
+  } finally {
+    setIsCheckingTicket(false);
+  }
+};
+
+// ----------- checkInTicket -----------
+const checkInTicket = async (): Promise<boolean> => {
+  if (!checkTicketModalData) return false;
+
   try {
     setIsCheckingTicket(true);
     setTicketStatusMessage("Регистриране...");
@@ -503,52 +530,39 @@ const AdminDashboard: React.FC = () => {
     const eventRef = doc(db, "events", checkTicketModalData.eventId);
     const eventDoc = await getDoc(eventRef);
 
-    if (!eventDoc.exists()) {
-      throw new Error("Събитието не е намерено");
-    }
+    if (!eventDoc.exists()) throw new Error("Събитието не е намерено");
 
     const eventData = eventDoc.data();
-    const tickets = eventData.tickets || {};
+    const tickets = eventData?.tickets || {};
 
-    let userIdToUpdate: string | null = null;
+    const userIdToUpdate = Object.entries(tickets).find(
+      ([_, ticket]) => (ticket as Ticket).ticketId === checkTicketModalData.ticketId
+    )?.[0];
 
-    for (const [userId, ticket] of Object.entries(tickets)) {
-      const ticketObj = ticket as Ticket;
-      if (ticketObj.ticketId === checkTicketModalData.ticketId) {
-        userIdToUpdate = userId;
-        break;
-      }
-    }
+    if (!userIdToUpdate) throw new Error("Билетът не е намерен в базата данни");
 
-    if (!userIdToUpdate) {
-      throw new Error("Билетът не е намерен в базата данни");
-    }
-
-    // ❗❗ Ето тук е Timestamp-а
+    // Регистриране на присъствие
     const now = Timestamp.fromDate(new Date());
-
-    // ✔ Това е твоят обновен updateDoc
     await updateDoc(eventRef, {
       [`tickets.${userIdToUpdate}.checkedIn`]: true,
-      [`tickets.${userIdToUpdate}.checkedInTime`]: now
+      [`tickets.${userIdToUpdate}.checkedInTime`]: now,
     });
 
+    // Обновяване на локалния state
     await fetchEvents();
+    setCheckTicketModalData(prev =>
+      prev
+        ? { ...prev, checkedIn: true, checkedInTime: now.toDate().toLocaleString("bg-BG") }
+        : null
+    );
 
-    setCheckTicketModalData(prev => prev ? {
-      ...prev,
-      checkedIn: true,
-      checkedInTime: now.toDate().toLocaleString('bg-BG')
-    } : null);
-
-    setTicketStatusMessage("✅ Билетът е регистриран!");
-    setTicketStatusType("success");
-
+    return true;
   } catch (error) {
-    console.error("❌ Грешка:", error);
+    console.error("❌ Грешка при check-in:", error);
     const errorMessage = error instanceof Error ? error.message : "Неизвестна грешка";
     setTicketStatusMessage(`❌ ${errorMessage}`);
     setTicketStatusType("error");
+    return false;
   } finally {
     setIsCheckingTicket(false);
   }
@@ -1342,124 +1356,130 @@ console.log("events", toggleEventRole);
         </div>
 
         <div className="tabs-section">
-          <button 
-            className={`tab-button ${activeTab === "users" ? "active" : ""}`}
-            onClick={() => setActiveTab("users")}
-          >
-            <Users size={18} />
-            Потребители ({users.length})
-          </button>
-          <button 
-            className={`tab-button ${activeTab === "events" ? "active" : ""}`}
-            onClick={() => setActiveTab("events")}
-          >
-            <Calendar size={18} />
-            Събития ({events.length})
-          </button>
-          <button 
-            className={`tab-button ${activeTab === "rooms" ? "active" : ""}`}
-            onClick={() => setActiveTab("rooms")}
-          >
-            <Building size={18} />
-            Стаи ({locationOptions.length})
-          </button>
-          <button 
-            className={`tab-button ${activeTab === "tickets" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("tickets");
-              openCheckTicketModal();
-            }}
-          >
-            <QrCode size={18} />
-            Проверка на билети
-          </button>
-        </div>
+  <button 
+    className={`tab-button ${activeTab === "users" ? "active" : ""}`}
+    onClick={() => setActiveTab("users")}
+  >
+    <Users size={18} />
+    Потребители ({users.length})
+  </button>
+  <button 
+    className={`tab-button ${activeTab === "events" ? "active" : ""}`}
+    onClick={() => setActiveTab("events")}
+  >
+    <Calendar size={18} />
+    Събития ({events.length})
+  </button>
+  <button 
+    className={`tab-button ${activeTab === "rooms" ? "active" : ""}`}
+    onClick={() => setActiveTab("rooms")}
+  >
+    <Building size={18} />
+    Стаи ({locationOptions.length})
+  </button>
+  <button 
+    className={`tab-button ${activeTab === "tickets" ? "active" : ""}`}
+    onClick={() => {
+      setActiveTab("tickets");
+      openQrScanner(); // стартира директно QR скенера
+    }}
+  >
+    <QrCode size={18} />
+    Проверка на билети
+  </button>
+</div>
 
-        {showQrScanner && (
-          <div className="modal-overlay">
-            <div className="modal-content qr-scanner-modal">
-              <div className="modal-header">
-                <h3>Сканирайте QR кода на билета</h3>
-                <button 
-                  onClick={closeQrScanner}
-                  className="close-btn"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="modal-body">
-                {cameraError ? (
-                  <div className="camera-error">
-                    <CameraOff size={48} />
-                    <p>{cameraError}</p>
-                    <p className="camera-help">
-                      Моля, разрешете достъп до камерата в настройките на браузъра
-                    </p>
-                    <button 
-                      onClick={openQrScanner}
-                      className="secondary-btn retry-btn"
-                    >
-                      Опитай отново
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="qr-scanner-container">
-                      <Scanner
-                        onScan={handleQrScan}
-                        onError={handleQrError}
-                        scanDelay={300}
-                        constraints={{ facingMode: "environment" }}
-                        styles={{ container: { width: '100%' } }}
-                      />
-                      <div className="qr-overlay">
-                        <div className="qr-frame"></div>
-                        <div className="qr-instructions">
-                          Насочете камерата към QR кода на билета
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="qr-scanner-info">
-                      <div className="info-tip">
-                        <strong>Съвети:</strong>
-                        <ul>
-                          <li>Уверете се, че QR кода е добре осветен</li>
-                          <li>Дръжте телефона неподвижно</li>
-                          <li>Билетът ще се сканира автоматично</li>
-                        </ul>
-                      </div>
-                      
-                      <div className="manual-entry-option">
-                        <p>Или въведете номера ръчно:</p>
-                        <div className="manual-input-group">
-                          <input
-                            type="text"
-                            value={ticketSearchTerm}
-                            onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                            placeholder="TICKET-XXXX"
-                            className="search-input small-input"
-                          />
-                          <button
-                            onClick={() => {
-                              closeQrScanner();
-                              searchTicket();
-                            }}
-                            disabled={!ticketSearchTerm.trim()}
-                            className="primary-btn small-btn"
-                          >
-                            Търси
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
+{showQrScanner && (
+  <div className="modal-overlay">
+    <div className="modal-content qr-scanner-modal">
+      <div className="modal-header">
+        <h3>Сканирайте QR кода на билета</h3>
+        <button 
+          onClick={closeQrScanner}
+          className="close-btn"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="modal-body">
+        {cameraError ? (
+          <div className="camera-error">
+            <CameraOff size={48} />
+            <p>{cameraError}</p>
+            <p className="camera-help">
+              Моля, разрешете достъп до камерата в настройките на браузъра
+            </p>
+            <button 
+              onClick={openQrScanner}
+              className="secondary-btn retry-btn"
+            >
+              Опитай отново
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="qr-scanner-container">
+              <Scanner
+                onScan={handleQrScan}
+                onError={handleQrError}
+                scanDelay={300}
+                constraints={{ facingMode: "environment" }}
+                styles={{ container: { width: '100%' } }}
+              />
+              <div className="qr-overlay">
+                <div className="qr-frame"></div>
+                <div className="qr-instructions">
+                  Насочете камерата към QR кода на билета
+                </div>
               </div>
             </div>
-          </div>
+            
+            <div className="qr-scanner-info">
+              <div className="info-tip">
+                <strong>Съвети:</strong>
+                <ul>
+                  <li>Уверете се, че QR кода е добре осветен</li>
+                  <li>Дръжте телефона неподвижно</li>
+                  <li>Билетът ще се сканира автоматично</li>
+                </ul>
+              </div>
+              
+              <div className="manual-entry-option">
+                <p>Или въведете номера ръчно:</p>
+                <div className="manual-input-group">
+                  <input
+                    type="text"
+                    value={ticketSearchTerm}
+                    onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
+                    placeholder="TICKET-XXXX"
+                    className="search-input small-input"
+                  />
+                  <button
+                    onClick={async () => {
+                      const found = await searchTicket();
+                      if (found) {
+                        await checkInTicket(); // автоматично регистриране след ръчно търсене
+                        setTicketStatusMessage("✅ Билетът е успешно регистриран!");
+                        setTicketStatusType("success");
+                        setShowQrScanner(false);
+                        setTimeout(() => setTicketStatusMessage(""), 3000);
+                      }
+                    }}
+                    disabled={!ticketSearchTerm.trim()}
+                    className="primary-btn small-btn"
+                  >
+                    Търси
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
+      </div>
+    </div>
+  </div>
+)}
 
         {showCheckTicketModal && !showQrScanner && !showTodayStats && (
           <div className="modal-overlay">
