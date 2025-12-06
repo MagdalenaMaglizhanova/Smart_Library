@@ -384,52 +384,55 @@ const [cameraError, setCameraError] = useState<string>('');
   const timeOptionsWithMinutes = generateTimeOptions();
 
 // ----------- handle QR scan -----------
+// ----------- handle QR scan -----------
+// ----------- handle QR scan -----------
 const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
   if (!detectedCodes || detectedCodes.length === 0) return;
 
   const scannedValue = detectedCodes[0].rawValue;
   if (!scannedValue) return;
 
-  // Извличаме само TICKETID от JSON, ако QR кодът съдържа JSON
-  let ticketId = scannedValue.toUpperCase();
+  // Извличаме TICKETID от JSON
+  let ticketId = '';
   try {
     const parsed = JSON.parse(scannedValue);
     if (parsed.TICKETID) {
-      ticketId = parsed.TICKETID.toUpperCase();
+      ticketId = parsed.TICKETID;
+    } else {
+      // Ако няма TICKETID, проверим дали не е вече чист ticketId
+      ticketId = scannedValue.toUpperCase();
     }
   } catch {
-    // Ако не е JSON, оставяме scannedValue както е
+    // Ако не е валиден JSON, приемем че е вече чист ticketId
+    ticketId = scannedValue.toUpperCase();
   }
 
-  // Сетваме в полето само ticketId
-  setTicketSearchTerm(ticketId);
-  console.log("Сканиран ticketId:", ticketId);
+  // Проверка дали има валиден ticketId
+  if (!ticketId || ticketId.trim() === '') {
+    console.log("Невалиден QR код - липсва ticketId");
+    return;
+  }
 
-  // 1. Търсим билета
-  const ticketFound = await searchTicket(ticketId);
-  if (!ticketFound) {
-    setTicketStatusMessage("❌ Билетът не е намерен!");
+  // Премахваме "TICKET-" ако го има вече
+  ticketId = ticketId.replace('TICKET-', '').toUpperCase();
+  
+  // Проверка дали останалата част е валидна (букви/цифри)
+  if (!ticketId.match(/^[A-Z0-9]+$/)) {
+    console.log("Невалиден формат на ticketId:", ticketId);
+    setTicketStatusMessage("❌ Невалиден формат на QR кода!");
     setTicketStatusType("error");
     return;
   }
+  
+  // Добавяме "TICKET-" отпред
+  const finalTicketId = `TICKET-${ticketId}`;
+  
+  // Сетваме в полето
+  setTicketSearchTerm(finalTicketId);
+  console.log("Сканиран ticketId:", finalTicketId);
 
-  // Проверка дали билетът вече е регистриран
-  if (checkTicketModalData?.checkedIn) {
-    setTicketStatusMessage("⚠️ Билетът вече е регистриран!");
-    setTicketStatusType("warning");
-    return;
-  }
-
-  // 2. Сканиране / check-in само ако билетът е намерен и не е регистриран
-  const success = await checkInTicket();
-  if (success) {
-    setTicketStatusMessage("✅ Билетът е успешно сканиран и регистриран!");
-    setTicketStatusType("success");
-    setShowQrScanner(false);
-
-    // Почистваме след 3 секунди
-    setTimeout(() => setTicketStatusMessage(""), 3000);
-  }
+  // Автоматично търсене на билета
+  await searchTicket(finalTicketId);
 };
 
 // ----------- handle QR error -----------
@@ -479,20 +482,28 @@ const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
     setTicketStatusMessage("Търсене на билет...");
     setTicketStatusType("info");
 
-    const ticketId = ticketToSearch.trim().toUpperCase();
+    // Нормализираме ticketId
+    const ticketId = normalizeTicketId(ticketToSearch);
+    
     console.log("Търсим билет с ID:", ticketId);
 
     let foundEvent: Event | null = null;
     let foundUserId: string | null = null;
     let foundTicketData: Ticket | null = null;
 
+    // Използваме по-ефективно търсене
     for (const event of events) {
       if (event.tickets) {
         for (const [userId, ticket] of Object.entries(event.tickets)) {
-          if ((ticket as Ticket).ticketId === ticketId) {
+          const currentTicket = ticket as Ticket;
+          // Премахваме "TICKET-" от сравняване за сигурност
+          const normalizedTicketId = currentTicket.ticketId.toUpperCase();
+          const normalizedSearchId = ticketId.toUpperCase();
+          
+          if (normalizedTicketId === normalizedSearchId) {
             foundEvent = event;
             foundUserId = userId;
-            foundTicketData = ticket as Ticket;
+            foundTicketData = currentTicket;
             break;
           }
         }
@@ -500,7 +511,11 @@ const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
       }
     }
 
-    if (!foundEvent || !foundUserId || !foundTicketData) return false;
+    if (!foundEvent || !foundUserId || !foundTicketData) {
+      setTicketStatusMessage("❌ Билетът не е намерен!");
+      setTicketStatusType("error");
+      return false;
+    }
 
     const user = users.find(u => u.id === foundUserId);
 
@@ -520,6 +535,8 @@ const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
     });
 
     setShowCheckTicketModal(true);
+    setTicketStatusMessage("✅ Билетът е намерен!");
+    setTicketStatusType("success");
     return true;
   } catch (error) {
     console.error("Грешка при търсене на билет:", error);
@@ -894,7 +911,12 @@ const checkInTicket = async (): Promise<boolean> => {
       return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
     });
   };
-
+const normalizeTicketId = (ticketId: string): string => {
+  // Премахваме "TICKET-" ако го има вече
+  let normalized = ticketId.replace(/^TICKET-/i, '').toUpperCase();
+  // Добавяме "TICKET-" отпред
+  return `TICKET-${normalized}`;
+};
   const getEventInfo = (room: string, date: string, timeSlotHour: string): RoomBooking | null => {
     const slotStart = timeSlotHour + ':00';
     const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
@@ -1461,28 +1483,35 @@ console.log("events", toggleEventRole);
                 <p>Или въведете номера ръчно:</p>
                 <div className="manual-input-group">
                   <input
-                    type="text"
-                    value={ticketSearchTerm}
-                    onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                    placeholder="TICKET-XXXX"
-                    className="search-input small-input"
-                  />
+  type="text"
+  placeholder="Въведете номер на билет (TICKET-XXXX) или сканирайте QR код..."
+  value={ticketSearchTerm}
+  onChange={(e) => {
+    let value = e.target.value.toUpperCase();
+    if (value && !value.startsWith('TICKET-')) {
+      value = `TICKET-${value.replace(/^TICKET-/i, '')}`;
+    }
+    setTicketSearchTerm(value);
+  }}
+  onKeyPress={(e) => e.key === 'Enter' && searchTicket()}
+  className="search-input"
+  disabled={isCheckingTicket}
+/>
                   <button
-                    onClick={async () => {
-                      const found = await searchTicket();
-                      if (found) {
-                        await checkInTicket(); // автоматично регистриране след ръчно търсене
-                        setTicketStatusMessage("✅ Билетът е успешно регистриран!");
-                        setTicketStatusType("success");
-                        setShowQrScanner(false);
-                        setTimeout(() => setTicketStatusMessage(""), 3000);
-                      }
-                    }}
-                    disabled={!ticketSearchTerm.trim()}
-                    className="primary-btn small-btn"
-                  >
-                    Търси
-                  </button>
+  onClick={async () => {
+    const found = await searchTicket();
+    if (found) {
+      // Не прави автоматично check-in след търсене
+      // Оставяме на потребителя да натисне бутона за регистрация
+      setShowQrScanner(false);
+      setTimeout(() => setTicketStatusMessage(""), 3000);
+    }
+  }}
+  disabled={!ticketSearchTerm.trim()}
+  className="primary-btn small-btn"
+>
+  Търси
+</button>
                 </div>
               </div>
             </div>
@@ -2702,13 +2731,19 @@ console.log("events", toggleEventRole);
                 <div className="search-box">
                   <Search className="search-icon" />
                   <input
-                    type="text"
-                    placeholder="Въведете номер на билет (TICKET-XXXX)..."
-                    value={ticketSearchTerm}
-                    onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                    onKeyPress={(e) => e.key === 'Enter' && searchTicket()}
-                    className="search-input"
-                  />
+  type="text"
+  placeholder="Въведете номер на билет (TICKET-XXXX)..."
+  value={ticketSearchTerm}
+  onChange={(e) => {
+    let value = e.target.value.toUpperCase();
+    if (value && !value.startsWith('TICKET-')) {
+      value = `TICKET-${value.replace(/^TICKET-/i, '')}`;
+    }
+    setTicketSearchTerm(value);
+  }}
+  onKeyPress={(e) => e.key === 'Enter' && searchTicket()}
+  className="search-input"
+/>
                 </div>
                 
                 <div className="ticket-action-buttons">
