@@ -40,7 +40,6 @@ interface ScheduleBooking {
 
 type BookingInfo = RoomBooking | ScheduleBooking;
 
-
 interface UserEvent {
   eventId: string;
   registrationDate: any;
@@ -293,6 +292,7 @@ const AdminDashboard: React.FC = () => {
 
   const openQrScanner = () => {
     setShowQrScanner(true);
+    setShowCheckTicketModal(false); // Затваряне на проверка на билети
     setCameraError('');
     setTicketStatusMessage('');
     setCheckTicketModalData(null);
@@ -301,11 +301,16 @@ const AdminDashboard: React.FC = () => {
   const closeQrScanner = () => {
     setShowQrScanner(false);
     setCameraError('');
+    // Връщане към проверка на билети след затваряне на QR скенера
+    if (!showCheckTicketModal) {
+      setShowCheckTicketModal(true);
+    }
   };
 
   // Функции за проверка на билети
   const openCheckTicketModal = () => {
     setShowCheckTicketModal(true);
+    setShowQrScanner(false); // Уверете се, че QR скенерът е затворен
     setTicketSearchTerm("");
     setCheckTicketModalData(null);
     setTicketStatusMessage("");
@@ -369,6 +374,9 @@ const AdminDashboard: React.FC = () => {
 
       setTicketStatusMessage("");
       setIsCheckingTicket(false);
+      
+      // Автоматично отваряне на модала за проверка на билети след успешно намиране
+      setShowCheckTicketModal(true);
 
     } catch (error) {
       console.error("Грешка при търсене на билет:", error);
@@ -1000,7 +1008,7 @@ const AdminDashboard: React.FC = () => {
     });
     fetchEvents();
   };
-console.log("Modal Event Data:", toggleEventRole);
+console.log('events', toggleEventRole);
   const updateMaxParticipants = async (eventId: string, maxParticipants: number) => {
     if (maxParticipants < 1) return;
     const event = events.find(e => e.id === eventId);
@@ -1017,7 +1025,7 @@ console.log("Modal Event Data:", toggleEventRole);
     });
     fetchEvents();
   };
-console.log("Modal Event Data:", updateMaxParticipants);
+console.log('part', updateMaxParticipants);
   // Функции за управление на модала
   const openCreateEventModal = () => {
     setModalMode('create');
@@ -1255,7 +1263,7 @@ console.log("Modal Event Data:", updateMaxParticipants);
           </button>
         </div>
 
-        {/* Модал за QR скенер */}
+        {/* Модал за QR скенер - ВИНАГИ САМО ТОЙ КОГАТО Е АКТИВЕН */}
         {showQrScanner && (
           <div className="modal-overlay">
             <div className="modal-content qr-scanner-modal">
@@ -1288,12 +1296,12 @@ console.log("Modal Event Data:", updateMaxParticipants);
                   <>
                     <div className="qr-scanner-container">
                       <Scanner
-    onScan={handleQrScan}
-    onError={handleQrError}
-    scanDelay={300}
-    constraints={{ facingMode: "environment" }}
-    styles={{ container: { width: '100%' } }}
-/>
+                        onScan={handleQrScan}
+                        onError={handleQrError}
+                        scanDelay={300}
+                        constraints={{ facingMode: "environment" }}
+                        styles={{ container: { width: '100%' } }}
+                      />
                       <div className="qr-overlay">
                         <div className="qr-frame"></div>
                         <div className="qr-instructions">
@@ -1342,8 +1350,8 @@ console.log("Modal Event Data:", updateMaxParticipants);
           </div>
         )}
 
-        {/* Модал за проверка на билети */}
-        {showCheckTicketModal && (
+        {/* Модал за проверка на билети - САМО КОГАТО QR СКЕНЕРЪТ НЕ Е АКТИВЕН */}
+        {showCheckTicketModal && !showQrScanner && (
           <div className="modal-overlay">
             <div className="modal-content ticket-check-modal">
               <div className="modal-header">
