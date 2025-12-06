@@ -2223,159 +2223,310 @@
   }
 }
 
-/* Book Animation Section Styles */
+/* ===========================================
+   BOOK ANIMATION SECTION - ОПРАВЕН ЗА МОБИЛНИ
+   =========================================== */
+
 .book-animation-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 500px;
-  height: 60vh;
-  position: relative;
-  padding: 50px 0;
-  box-sizing: border-box;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 60px 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  overflow: hidden;
 }
 
+/* Bookshelf */
 .bookshelf {
-  max-width: 1000px;
-  width: 80%;
+  position: relative;
+  width: 100%;
+  height: 300px;
   display: flex;
   justify-content: center;
-  flex-shrink: 0;
-  z-index: 1;
-  position: relative;
-  height: 0px;
-  box-sizing: border-box;
-  border-bottom: 16px solid #f3f3f3;
-  border-left: 20px solid transparent;
-  border-right: 20px solid transparent;
-  pointer-events: all;
+  align-items: flex-end;
+  margin: 0 auto;
 }
 
-.bookshelf::before {
-  content: "";
-  position: absolute;
-  top: 16px;
-  background: linear-gradient(90deg, #fafafa 0%, #ffffff 100%);
-  height: 26px;
-  width: calc(100% + 40px);
-  box-shadow: 0px -1px 6px rgba(0, 0, 0, 0.05),
-    0px 4px 16px rgba(0, 0, 0, 0.25);
+/* Books Container */
+.books {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  height: 280px;
   z-index: 2;
 }
 
-.bookshelf::after {
-  content: "";
-  height: 80px;
-  width: calc(100% + 40px);
-  position: absolute;
-  top: 42px;
-  display: block;
-  background: linear-gradient(
-    180deg,
-    #f3f3f3 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  clip-path: polygon(0% 0%, 100% 0%, 97% 100%, 3% 100%);
-  z-index: -1;
-}
-
-.books {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10%;
-  width: 80%;
-  margin: auto;
-  transform: translateY(-100%);
-  padding: 0 0 2px;
-  z-index: 0;
-  position: relative;
-  top: 10px;
-}
-
+/* Individual Books - ОРИГИНАЛЕН РАЗМЕР */
 .book {
-  width: 100%;
-  border-radius: 3px 0.5px 0.5px 3px;
-  aspect-ratio: 115 / 180;
+  width: 150px;
+  height: 230px;
   position: relative;
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px 12px 12px 8px;
+  transform-style: preserve-3d;
+  transform-origin: left center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    -8px 8px 20px rgba(0,0,0,0.25),
+    inset 0 0 0 3px rgba(255,255,255,0.15);
+  animation: float 4s ease-in-out infinite;
 }
 
-.book:hover {
-  transform: translateY(-5px);
-}
-
-.book:hover::before,
-.book:hover::after {
-  transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.book:hover::before {
-  transform: translate(0, -45%) skew(3deg, -3deg) scale(1.35);
-}
-
-.book:hover::after {
-  transform: translate(0, -45%) skew(3deg, -3deg) scale(1.275);
-}
-
-.book:nth-of-type(even):hover::before {
-  transform: translate(0, -45%) skew(-3deg, 3deg) scale(1.35);
-}
-
-.book:nth-of-type(even):hover::after {
-  transform: translate(0, -45%) skew(-3deg, 3deg) scale(1.275);
-}
-
-.book::before,
-.book::after {
-  position: absolute;
-  width: 100%;
-  display: block;
-  content: " ";
-  transition: all 300ms ease-out;
-  background: var(--bg-image) center center/cover no-repeat, #f3f3f3;
-}
-
+/* Book Spine */
 .book::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
   height: 100%;
-  box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.25),
-    inset 2px 0px 2px 1px rgba(29, 27, 27, 0.2);
-  border-radius: 3px 0.5px 0.5px 3px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+  border-radius: 8px 0 0 8px;
+  transform: translateZ(-2px);
 }
 
+/* Book Pages Effect */
 .book::after {
-  height: 102%;
-  filter: blur(10px);
-  z-index: -1;
-  opacity: 0.7;
-  border-radius: 3px 0.5px 0.5px 3px;
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 15px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border-radius: 0 12px 12px 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .book-animation-section {
-    height: 40vh;
-    min-height: 300px;
-    padding: 30px 0;
+/* Different Animation Delays */
+.book:nth-child(1) { animation-delay: 0s; }
+.book:nth-child(2) { animation-delay: 0.5s; }
+.book:nth-child(3) { animation-delay: 1s; }
+.book:nth-child(4) { animation-delay: 1.5s; }
+
+/* Hover Effects */
+.book:hover {
+  transform: rotateY(-25deg) translateY(-15px);
+  box-shadow: 
+    -20px 20px 40px rgba(0,0,0,0.4),
+    inset 0 0 0 3px rgba(255,255,255,0.25);
+  animation-play-state: paused;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotateY(0);
+  }
+  50% {
+    transform: translateY(-20px) rotateY(8deg);
+  }
+}
+
+/* ==============================
+   RESPONSIVE DESIGN - ЗА ПАЗЕНЕ НА ГОЛЯМ РАЗМЕР
+   ============================== */
+
+/* Desktop - default големина */
+@media (min-width: 1025px) {
+  .bookshelf {
+    max-width: 1200px;
+    margin: 0 auto;
   }
   
   .books {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5%;
+    gap: 40px;
+  }
+  
+  .book {
+    width: 150px;
+    height: 230px;
   }
 }
 
-@media (max-width: 480px) {
+/* Tablets - леко намаляване */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .bookshelf {
+    height: 280px;
+  }
+  
   .books {
-    grid-template-columns: 1fr;
-    gap: 2%;
+    gap: 25px;
+    height: 260px;
+  }
+  
+  .book {
+    width: 130px;
+    height: 200px;
+  }
+  
+  .book::before {
+    width: 18px;
+  }
+  
+  .book::after {
+    width: 12px;
+  }
+}
+
+/* Mobile - още по-малко намаляване */
+@media (max-width: 768px) and (min-width: 481px) {
+  .book-animation-section {
+    padding: 40px 0;
   }
   
   .bookshelf {
-    width: 90%;
+    height: 250px;
   }
+  
+  .books {
+    gap: 15px;
+    height: 220px;
+  }
+  
+  .book {
+    width: 100px;
+    height: 180px;
+  }
+  
+  .book::before {
+    width: 15px;
+  }
+  
+  .book::after {
+    width: 10px;
+  }
+  
+  .book:hover {
+    transform: rotateY(-20deg) translateY(-10px);
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotateY(0);
+    }
+    50% {
+      transform: translateY(-15px) rotateY(6deg);
+    }
+  }
+}
+
+/* Small Mobile - минимално намаляване */
+@media (max-width: 480px) {
+  .book-animation-section {
+    padding: 30px 0;
+  }
+  
+  .bookshelf {
+    height: 220px;
+  }
+  
+  .books {
+    gap: 8px;
+    height: 200px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 10px;
+  }
+  
+  .book {
+    width: 80px;
+    height: 150px;
+    margin-bottom: 10px;
+  }
+  
+  .book::before {
+    width: 12px;
+  }
+  
+  .book::after {
+    width: 8px;
+  }
+  
+  .book:hover {
+    transform: rotateY(-15deg) translateY(-8px);
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotateY(0);
+    }
+    50% {
+      transform: translateY(-10px) rotateY(4deg);
+    }
+  }
+}
+
+/* Very Small Mobile - все още видими книги */
+@media (max-width: 360px) {
+  .books {
+    gap: 6px;
+  }
+  
+  .book {
+    width: 70px;
+    height: 130px;
+  }
+  
+  .book::before {
+    width: 10px;
+  }
+}
+
+/* Landscape Mode - поддръжка */
+@media (max-height: 500px) and (orientation: landscape) {
+  .book-animation-section {
+    padding: 30px 0;
+  }
+  
+  .bookshelf {
+    height: 200px;
+  }
+  
+  .books {
+    height: 180px;
+    gap: 15px;
+  }
+  
+  .book {
+    width: 90px;
+    height: 160px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .book:hover {
+    transform: none;
+    animation-play-state: running;
+  }
+  
+  .book:active {
+    transform: rotateY(-15deg) translateY(-8px);
+  }
+}
+
+/* Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .book {
+    -webkit-transform-style: preserve-3d;
+    -webkit-transform-origin: left center;
+  }
+}
+
+/* Добавете и контейнер за центриране ако нямате */
+.bookshelf-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* За да използвате контейнера, обвийте bookshelf в него */
+.book-animation-section > .bookshelf-container > .bookshelf {
+  width: 100%;
+  height: 300px;
+    
 }
 /* Modern Library Design System - Green, Yellow, Red Theme */
 :root {
@@ -4230,3 +4381,4 @@
 [data-theme="dark"] .about-section {
   background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-section) 100%);
 }
+

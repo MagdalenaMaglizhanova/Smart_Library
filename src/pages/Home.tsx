@@ -787,29 +787,31 @@ const handleEventRegistration = (event: Event) => {
         </div>
       </section>
 
-      {/* Book Animation Section */}
-      <section className="book-animation-section">
-        <div className="bookshelf">
-          <div className="books">
-            <div 
-              className="book" 
-              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
-            ></div>
-            <div 
-              className="book" 
-              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
-            ></div>
-            <div 
-              className="book" 
-              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
-            ></div>
-            <div 
-              className="book" 
-              style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
-            ></div>
-          </div>
-        </div>
-      </section>
+   {/* Book Animation Section - ОПРАВЕН ЗА МОБИЛНИ */}
+<section className="book-animation-section">
+  <div className="bookshelf-container">
+    <div className="bookshelf">
+      <div className="books">
+        <div 
+          className="book" 
+          style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
+        ></div>
+        <div 
+          className="book" 
+          style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
+        ></div>
+        <div 
+          className="book" 
+          style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
+        ></div>
+        <div 
+          className="book" 
+          style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
+        ></div>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Enhanced Events Section with Calendar Design */}
       <section className="events-section">
