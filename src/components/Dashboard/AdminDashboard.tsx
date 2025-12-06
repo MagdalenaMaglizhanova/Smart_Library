@@ -391,32 +391,29 @@ const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
   const raw = detectedCodes[0].rawValue;
   if (!raw) return;
 
-  console.log("Raw QR value:", raw); // debug, можеш да го махнеш после
+  console.log("Raw QR value:", raw);
 
-  let ticketId = raw;
+  let ticketId = '';
 
   try {
-    // Първо парсваме JSON
-    let parsed = JSON.parse(raw);
-
-    // Ако е вторично сериализиран (string вътре), парсваме пак
-    if (typeof parsed === 'string') {
-      parsed = JSON.parse(parsed);
-    }
-
-    // Ако има TICKETID, взимаме него
+    // Опитваме да парснем като JSON
+    const parsed = JSON.parse(raw);
+    
+    // Ако има TICKETID в JSON, го вземаме
     if (parsed.TICKETID) {
       ticketId = parsed.TICKETID;
+    } else {
+      // Ако няма TICKETID, вземаме целия текст
+      ticketId = raw;
     }
   } catch {
-    // Ако не е JSON, оставяме raw
+    // Ако не е JSON, вземаме директно raw стойността
+    ticketId = raw;
   }
 
-  // Премахваме "TICKET-" в началото, за да избегнем дублиране
-  ticketId = ticketId.replace(/^TICKET-/i, '').toUpperCase();
-
-  // Добавяме "TICKET-" отпред
-  const finalTicketId = `TICKET-${ticketId}`;
+  // Опазваме само частта след "TICKET-"
+  const match = ticketId.match(/TICKET-([A-Z0-9]+)/i);
+  const finalTicketId = match ? `TICKET-${match[1].toUpperCase()}` : ticketId;
 
   setTicketSearchTerm(finalTicketId);
   console.log("Сканиран ticketId:", finalTicketId);
@@ -472,9 +469,15 @@ const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
     setTicketStatusMessage("Търсене на билет...");
     setTicketStatusType("info");
 
-    // Нормализираме ticketId (премахваме "TICKET-" ако го има вече и го добавяме отново)
+    // Нормализираме ticketId
     let ticketId = ticketToSearch.trim().toUpperCase();
-    if (!ticketId.startsWith('TICKET-')) {
+    
+    // Премахваме всичко преди "TICKET-"
+    const match = ticketId.match(/TICKET-[A-Z0-9]+/);
+    if (match) {
+      ticketId = match[0];
+    } else {
+      // Ако няма "TICKET-" добавяме го
       ticketId = `TICKET-${ticketId}`;
     }
     
