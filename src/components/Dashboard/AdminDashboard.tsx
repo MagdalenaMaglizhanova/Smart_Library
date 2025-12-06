@@ -391,18 +391,22 @@ const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
   const raw = detectedCodes[0].rawValue;
   if (!raw) return;
 
-  // Опитваме да вземем TICKETID от JSON, ако е валиден
-  const ticketId = (() => {
-    try {
-      const parsed = JSON.parse(raw);
-      return parsed.TICKETID || raw;
-    } catch {
-      return raw;
-    }
-  })()
-  .replace(/^TICKET-/i, '')  // премахваме "TICKET-" в началото
-  .toUpperCase();
+  let ticketId = raw;
 
+  // Ако е JSON, вземаме само TICKETID
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.TICKETID) {
+      ticketId = parsed.TICKETID;
+    }
+  } catch {
+    // Ако не е JSON, оставяме raw като ticketId
+  }
+
+  // Премахваме "TICKET-" в началото, за да избегнем дублиране
+  ticketId = ticketId.replace(/^TICKET-/i, '').toUpperCase();
+
+  // Добавяме "TICKET-" отпред
   const finalTicketId = `TICKET-${ticketId}`;
 
   setTicketSearchTerm(finalTicketId);
